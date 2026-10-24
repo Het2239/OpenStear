@@ -1,7 +1,8 @@
 """Virtual pad backends behind one interface, so the driver can be swapped.
 
 `ViGEmPad` drives a real virtual Xbox 360 pad (Windows + ViGEmBus).
-`LogPad` prints state changes and is used on other platforms or for testing.
+`UInputPad` (uinput_pad.py) does the same on Linux through /dev/uinput.
+`LogPad` prints state changes; used when neither is available, or for testing.
 """
 
 import logging
@@ -103,12 +104,35 @@ def vigem_available():
     return True
 
 
+UINPUT_HELP = (
+    "Cannot open /dev/uinput, so no virtual controller on Linux. Allow it with:\n"
+    "  echo 'KERNEL==\"uinput\", SUBSYSTEM==\"misc\", TAG+=\"uaccess\", OPTIONS+=\"static_node=uinput\"' "
+    "| sudo tee /etc/udev/rules.d/60-opensteer-uinput.rules\n"
+    "  sudo modprobe uinput && sudo udevadm control --reload && sudo udevadm trigger\n"
+    "then log out and back in. Running with --pad log for now."
+)
+
+
 def make_factory(backend="auto"):
     """Return a callable(name) -> Pad for the chosen backend."""
     if backend == "auto":
-        backend = "vigem" if vigem_available() else "log"
+        if sys.platform == "win32":
+            backend = "vigem" if vigem_available() else "log"
+        elif sys.platform.startswith("linux"):
+            from . import uinput_pad
+            if uinput_pad.available():
+                backend = "uinput"
+            else:
+                log.warning(UINPUT_HELP)
+                backend = "log"
+        else:
+            backend = "log"
     if backend == "vigem":
         log.info("Using ViGEmBus virtual Xbox 360 pads")
         return lambda name: ViGEmPad()
+    if backend == "uinput":
+        from .uinput_pad import UInputPad
+        log.info("Using uinput virtual Xbox 360 pads")
+        return lambda name: UInputPad(f"OpenSteer virtual pad ({name})")
     log.info("Using log-only pads (no virtual controller)")
     return LogPad

@@ -98,10 +98,17 @@ Settings, the pairing token and certificates are stored in
 `%APPDATA%\OpenSteer\` (`~/.config/OpenSteer/` elsewhere). `--new-token`
 unpairs all phones.
 
-On Linux/macOS the host runs with a log-only pad (it prints what it would send),
-which is handy for working on the phone app. The window needs tkinter
-(`sudo apt install python3-tk` on Debian/Ubuntu); without it the host runs in
-the console.
+### Linux
+
+On Linux the host creates a virtual Xbox 360 pad through `/dev/uinput` (no
+driver to install). Browsers, Steam, SDL games and gamepad testers see it as a
+standard Xbox controller. Most desktops already let your user open
+`/dev/uinput`; if the host says it can't, it prints the one-time udev rule to
+add. Check with `ls -l /dev/uinput` and `getfacl /dev/uinput`.
+
+The window needs tkinter (`sudo apt install python3-tk` on Debian/Ubuntu);
+without it the host runs in the console. On macOS the host runs with a
+log-only pad that prints what it would send.
 
 ## Development
 
@@ -118,6 +125,9 @@ XInput):
 set OPENSTEER_VIGEM_TEST=1
 pytest -v tests/test_vigem_real.py
 ```
+
+On Linux, `OPENSTEER_UINPUT_TEST=1 pytest -v tests/test_uinput_real.py` creates
+a pad and reads it back from the kernel.
 
 ## License
 

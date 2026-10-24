@@ -85,8 +85,8 @@ def main():
                    help="usb = USB (ADB), tether = USB tethering, wifi = Wi-Fi")
     p.add_argument("--port", type=int, default=cfg["port"],
                    help="base port; the next two ports are used for HTTPS and setup")
-    p.add_argument("--pad", choices=["auto", "vigem", "log"], default=cfg["pad"],
-                   help="virtual pad backend (log = print only)")
+    p.add_argument("--pad", choices=["auto", "vigem", "uinput", "log"], default=cfg["pad"],
+                   help="virtual pad backend: vigem (Windows), uinput (Linux), log (print only)")
     p.add_argument("--no-adb", action="store_true", help="do not run adb reverse")
     p.add_argument("--no-ui", action="store_true", help="console only, no window")
     p.add_argument("--new-token", action="store_true", help="generate a new pairing token")
