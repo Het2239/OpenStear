@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from host.keys import KEY_NAMES as KEYS
 from host.mapper import DEFAULT_BUTTONS
 
 WEB = Path(__file__).resolve().parent.parent / "web"
@@ -30,6 +31,11 @@ def test_phone_and_host_agree_on_button_bits():
     assert js_list("BUTTONS") == DEFAULT_BUTTONS
 
 
+def test_phone_and_host_agree_on_keys():
+    body = re.search(r"export const KEYS = \[(.*?)\];", (WEB / "keys.js").read_text(), re.S).group(1)
+    assert re.findall(r'"([A-Z0-9]+)"', body) == KEYS
+
+
 def test_index_lists_every_layout_file():
     files = {p.stem for p in (WEB / "layouts").glob("*.json")} - {"index"}
     assert set(IDS) == files
@@ -50,7 +56,10 @@ def test_layout_is_valid(layout_id):
         assert 0 <= c["x"] and 0 <= c["y"] and c["w"] > 0 and c["h"] > 0, where
         assert c["x"] + c["w"] <= 100.001 and c["y"] + c["h"] <= 100.001, where
         if c["type"] == "button":
-            assert c["map"] in DEFAULT_BUTTONS, where
+            m = c["map"]
+            assert (m in DEFAULT_BUTTONS or (m.startswith("key:") and m[4:] in KEYS)
+                    or re.fullmatch(r"axis:(\+(lx|ly|rx|ry|lt|rt)|-(lx|ly|rx|ry))", m)), where
+            assert c.get("mode", "hold") in ("hold", "toggle", "pulse"), where
         if c["type"] == "pedal":
             assert c["axis"] in AXES, where
         if c["type"] == "stick":

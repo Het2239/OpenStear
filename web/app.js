@@ -5,7 +5,7 @@ import { ButtonLatch } from "./buttons.js";
 import { Rumble } from "./rumble.js";
 import { Editor } from "./editor.js";
 import {
-  exportLayout, importFile, loadCustom, loadPages, newId, saveCustom, savePages,
+  exportLayout, importFile, loadCustom, loadPages, newId, saveCustom, savePages, validateLayout,
 } from "./layoutlib.js";
 
 const PING_MS = 1000;
@@ -50,6 +50,9 @@ let sendTimer = null;
 let lastTick = performance.now();
 let pushTimer = null;
 const latch = new ButtonLatch();
+// Keys get their own latch; each key in use gets a bit, keyNames[bit] = name.
+const keyLatch = new ButtonLatch();
+let keyNames = [];
 const editor = new Editor({ pad: $("pad"), bar: $("editbar"), props: $("editprops") });
 const rumble = new Rumble();
 let latchTimer = null;
@@ -78,7 +81,8 @@ function saveCustomLayouts() {
 
 function useLayout(id) {
   layout = layouts.find((l) => l.id === id) || layouts.find((l) => l.id === DEFAULT_LAYOUT);
-  save("os.layout", layout.id);
+  // A PC profile is temporary; remember the phone's own choice instead.
+  if (layout.id !== PROFILE_ID) save("os.layout", layout.id);
   const pad = $("pad");
   pad.replaceChildren();
   pad.dataset.layout = layout.id;
@@ -88,10 +92,21 @@ function useLayout(id) {
     calibrate: () => tilt.calibrate(),
     // A button changed: record the edge and send it now, not at the next tick.
     hold: (id, mask) => { latch.hold(id, mask, performance.now()); tick(); },
+    holdKey: (id, key, down) => {
+      let i = keyNames.indexOf(key);
+      if (i < 0) {
+        if (keyNames.length >= 30) return;  // bit mask limit; no real layout needs this many
+        i = keyNames.push(key) - 1;
+      }
+      keyLatch.hold(id, down ? 1 << i : 0, performance.now());
+      tick();
+    },
     pages: pages.length >= 2 ? pages : null,
     nextPage,
   };
   latch.reset();
+  keyLatch.reset();
+  keyNames = [];
   controls = layout.controls.map((def, i) => create(def, ctx, i));
   for (const c of controls) pad.append(c.el);
   // Nothing from the old layout may stay pressed.
@@ -100,6 +115,58 @@ function useLayout(id) {
     ? "Hold the phone in landscape like a wheel, level, then tap Start."
     : "Hold the phone in landscape, then tap Start.";
   $("overlay-layout").textContent = `Layout: ${layout.name} (change)`;
+}
+
+// --- PC game profiles --------------------------------------------------------
+//
+// The PC can make a saved layout active (picked in its window, or because
+// the linked game is running). We switch to it while it is active and go
+// back to the phone's own layout afterwards.
+
+const PROFILE_ID = "pc-profile";
+let pcProfiles = { names: [], active: null };
+let ownLayoutId = null;
+
+function applyProfile(msg) {
+  pcProfiles = { names: Array.isArray(msg.names) ? msg.names : [], active: msg.active || null };
+  let entry = null;
+  if (msg.active && msg.layout) {
+    try {
+      entry = { ...validateLayout(msg.layout), id: PROFILE_ID, group: "PC profile", name: msg.active };
+    } catch {
+      entry = null;
+    }
+  }
+  const current = layouts.find((l) => l.id === PROFILE_ID);
+  if (entry && current && layout.id === PROFILE_ID && JSON.stringify(entry) === JSON.stringify(current)) {
+    return;  // same profile re-sent (e.g. after a reconnect)
+  }
+  layouts = layouts.filter((l) => l.id !== PROFILE_ID);
+  if (entry) {
+    layouts.push(entry);
+    if (layout.id !== PROFILE_ID) ownLayoutId = layout.id;
+    useLayout(PROFILE_ID);
+    toast(`Game profile from PC: ${entry.name}`);
+  } else if (layout.id === PROFILE_ID) {
+    useLayout(ownLayoutId || load("os.layout") || DEFAULT_LAYOUT);
+    toast("Game profile ended");
+  }
+}
+
+function saveToPc() {
+  const name = prompt("Save this layout on the PC as a game profile named:", layout.name);
+  if (!name) return;
+  const { custom, ...plain } = layout;
+  send({ t: "saveProfile", name, layout: { ...plain, id: undefined } });
+}
+
+let toastTimer = null;
+function toast(text) {
+  const el = $("toast");
+  el.textContent = text;
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.hidden = true; }, 2500);
 }
 
 // ⇄ in the status bar: jump to the next layout on the quick-switch list.
@@ -142,6 +209,10 @@ function openMenu() {
   }
   $("menu-notes").textContent = layout.notes || "";
   $("menu-delete").hidden = !layout.custom;
+  $("menu-save-pc").disabled = !connected;
+  $("menu-pc").textContent = pcProfiles.active
+    ? `PC game profile active: ${pcProfiles.active}. Change it in the PC window.`
+    : pcProfiles.names.length ? `Profiles on the PC: ${pcProfiles.names.join(", ")}` : "";
   $("menu-edit").textContent = layout.custom ? "Edit layout" : "Customise (copy)";
   $("menu-error").textContent = "";
   $("menu").hidden = false;
@@ -174,6 +245,7 @@ function editLayout() {
 }
 
 $("menu-edit").addEventListener("click", editLayout);
+$("menu-save-pc").addEventListener("click", saveToPc);
 $("menu-export").addEventListener("click", () => exportLayout(layout));
 $("menu-import").addEventListener("click", () => $("import-file").click());
 $("import-file").addEventListener("change", async (e) => {
@@ -268,6 +340,10 @@ function connect() {
       connected = true;
       retryMs = 250;
       syncSettings(msg.settings);
+    } else if (msg.t === "profile") {
+      applyProfile(msg);
+    } else if (msg.t === "profileSaved") {
+      toast(msg.name ? `Saved on the PC as "${msg.name}"` : msg.error);
     } else if (msg.t === "rumble") {
       rumble.set(Number(msg.l) || 0, Number(msg.s) || 0);
       prefs.rumbling = rumble.level > 0;
@@ -306,9 +382,10 @@ function tick() {
   if (layout.tilt) next.lx = steer;
   for (const c of controls) c.read(next);
   next.btn = latch.output(now);
+  const keyMask = keyLatch.output(now);
   // A queued press/release is waiting for its minimum time: come back for it
   // promptly rather than at the next regular tick.
-  if (latch.pending && !latchTimer) {
+  if ((latch.pending || keyLatch.pending) && !latchTimer) {
     latchTimer = setTimeout(() => { latchTimer = null; tick(); }, 5);
   }
   state = next;
@@ -316,6 +393,7 @@ function tick() {
   // tp/tc let the PC check that every tap the phone saw became a press.
   const body = { btn: state.btn, tp: stats.taps, tc: stats.cancels };
   for (const a of AXES) body[a] = +state[a].toFixed(4);
+  if (keyMask) body.k = keyNames.filter((_, i) => keyMask & (1 << i));
   const key = JSON.stringify(body);
   // On a slow link, drop repeats but never a change (e.g. a button press).
   if (key === lastSent && ws.bufferedAmount > MAX_BUFFERED) return;

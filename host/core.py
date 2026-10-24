@@ -12,16 +12,18 @@ never opens a port to the network.
 import asyncio
 import logging
 
+import psutil
 from aiohttp import web
 
 from . import adb, certs, network
-from .server import create_app, create_trust_app
+from .server import create_app, create_trust_app, notify_profiles
 
 log = logging.getLogger(__name__)
 
 USB, TETHER, WIFI = "usb", "tether", "wifi"
 MODES = {USB: "USB (ADB)", TETHER: "USB tethering", WIFI: "Wi-Fi"}
 NET_POLL_S = 3.0
+GAME_POLL_S = 3.0
 
 HINTS = {
     USB: "Android: enable USB debugging, plug the phone in, accept the prompt, "
@@ -34,7 +36,7 @@ HINTS = {
 
 class Host:
     def __init__(self, port, token, pad_factory, cert_dir, mode=USB, use_adb=True,
-                 settings_path=None):
+                 settings_path=None, keyboard=None, profiles_path=None):
         self.port = port
         self.token = token
         self.cert_dir = cert_dir
@@ -44,7 +46,8 @@ class Host:
         self.ifaces = []
         self.adb_status = {"adb": None, "devices": {}}
         self.error = None
-        self.app = create_app(token, pad_factory, settings_path)
+        self.app = create_app(token, pad_factory, settings_path, keyboard, profiles_path)
+        self.profiles = self.app["profiles"]
         self._runner = web.AppRunner(self.app, access_log=None)
         self._https_site = None
         self._trust_runner = None
@@ -62,6 +65,7 @@ class Host:
             self._tasks.append(asyncio.create_task(
                 adb.keep_reversed(self.port, status=self.adb_status)))
         self._tasks.append(asyncio.create_task(self._watch_network()))
+        self._tasks.append(asyncio.create_task(self._watch_games()))
         await self.set_mode(self.mode)
 
     async def stop(self):
@@ -135,6 +139,38 @@ class Host:
             except Exception:
                 log.exception("Network refresh failed")
 
+    # --- game profiles --------------------------------------------------------
+
+    async def _watch_games(self):
+        """Track running programs so "auto" can switch to a game's profile."""
+        while True:
+            try:
+                running = await asyncio.to_thread(running_programs)
+                before = self.profiles.active()
+                self.profiles.running = running
+                if self.profiles.active() != before:
+                    log.info("Game profile: %s", self.profiles.active() or "none")
+                    notify_profiles(self.app)
+            except Exception:
+                log.exception("Game detection failed")
+            await asyncio.sleep(GAME_POLL_S)
+
+    async def select_profile(self, selection):
+        before = self.profiles.active()
+        self.profiles.select(selection)
+        if self.profiles.active() != before:
+            notify_profiles(self.app)
+
+    async def link_profile(self, name, exe):
+        before = self.profiles.active()
+        self.profiles.link(name, exe)
+        if self.profiles.active() != before:
+            notify_profiles(self.app)
+
+    async def delete_profile(self, name):
+        self.profiles.delete(name)
+        notify_profiles(self.app)
+
     # --- status for the UI and console --------------------------------------
 
     def ip_choices(self):
@@ -178,3 +214,13 @@ class PortInUse(Exception):
     def __init__(self, host, port, err):
         super().__init__(f"Cannot listen on {host}:{port} ({err.strerror or err}). "
                          f"Another program may be using it; try --port {port + 10}.")
+
+
+def running_programs():
+    """Lower-case names of running programs, e.g. {"f1_25.exe", "steam.exe"}."""
+    names = set()
+    for p in psutil.process_iter(["name"]):
+        name = p.info.get("name")
+        if name:
+            names.add(name.lower())
+    return frozenset(names)

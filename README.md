@@ -97,6 +97,35 @@ In the layout menu (☰):
 
 Custom layouts are stored on the phone.
 
+### Remapping and button modes
+
+In the editor, tap a button and set **Sends** to:
+
+- an **Xbox button** (A, B, LB, D-pad, …),
+- a full **axis** push (e.g. RT for a gas button, left stick ◀ / ▶), or
+- a **keyboard key** (letters, digits, F1–F24, arrows, Space, Shift, …).
+  Windows sends hardware scan codes, which DirectInput games also read;
+  Linux uses a virtual keyboard.
+
+and **Mode** to **Hold** (while pressed), **Toggle** (tap on, tap off — the
+button stays lit) or **Pulse** (one short press per tap, e.g. for a horn or
+a menu key).
+
+### Game profiles (on the PC)
+
+On the phone, ☰ → **Save to PC as profile** stores the current layout on the
+PC. In the PC window under **Game profile**:
+
+- **Auto** — when a profile's game is running, every phone switches to it,
+  and back to its own layout when the game closes. Link a profile to its game
+  with **Manage… → Game program** (start the game first, then pick e.g.
+  `F1_25.exe`).
+- **Always: <name>** — use that profile now.
+- **Off** — phones use their own layouts.
+
+Profiles live in `profiles.json` next to `config.json`. Console mode:
+`--profile auto|off|<name>`.
+
 Built-in layouts are JSON files in `web/layouts/` (positions in percent of the screen).
 To preview one in a desktop browser, open
 `http://localhost:8765/#preview&layout=f1`.

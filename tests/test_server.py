@@ -28,6 +28,7 @@ async def hello(client, cid="phone1"):
     ws = await client.ws_connect(f"/ws?k={TOKEN}")
     await ws.send_json({"t": "hello", "id": cid})
     assert (await ws.receive_json())["t"] == "welcome"
+    assert (await ws.receive_json())["t"] == "profile"
     return ws
 
 
@@ -115,6 +116,8 @@ async def test_reconnect_takes_over_old_session(client, pads):
     old = await hello(client, "a")
     new = await hello(client, "a")
     msg = await old.receive()
+    while msg.type.name == "TEXT":   # skip anything sent before the takeover
+        msg = await old.receive()
     assert old.closed or msg.type.name in ("CLOSE", "CLOSED", "CLOSING")
     await new.send_json({"t": "s", "seq": 1, "thr": 1.0})
     await settle()

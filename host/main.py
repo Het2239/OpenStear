@@ -10,6 +10,7 @@ import threading
 from . import config
 from .core import MODES, Host, PortInUse
 from .gamepad import make_factory
+from .keyboard_out import make_keyboard
 
 log = logging.getLogger("opensteer")
 
@@ -89,6 +90,7 @@ def main():
                    help="virtual pad backend: vigem (Windows), uinput (Linux), log (print only)")
     p.add_argument("--no-adb", action="store_true", help="do not run adb reverse")
     p.add_argument("--no-ui", action="store_true", help="console only, no window")
+    p.add_argument("--profile", metavar="NAME", help='game profile: "off", "auto" or a profile name')
     p.add_argument("--new-token", action="store_true", help="generate a new pairing token")
     p.add_argument("-v", "--verbose", action="store_true")
     args = p.parse_args()
@@ -101,7 +103,11 @@ def main():
                         format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
     host = Host(args.port, cfg["token"], make_factory(args.pad), config.cert_dir(),
                 mode=args.mode, use_adb=not args.no_adb,
-                settings_path=config.config_path().parent / "phones.json")
+                settings_path=config.config_path().parent / "phones.json",
+                keyboard=make_keyboard("log" if args.pad == "log" else "auto"),
+                profiles_path=config.config_path().parent / "profiles.json")
+    if args.profile:
+        host.profiles.select(args.profile)
     try:
         if args.no_ui or not run_window(host, cfg):
             asyncio.run(run_console(host))

@@ -10,9 +10,12 @@ from pathlib import Path
 
 from aiohttp import WSMsgType, web
 
+from .keyboard_out import Keyboard, LogKeys
+from .keys import KEYS
 from .latch import ButtonLatch
 from .mapper import NEUTRAL, map_state
 from .phone_settings import SettingsStore
+from .profiles import Profiles
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +23,7 @@ WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 FAILSAFE_S = 0.3
 WATCHDOG_S = 0.05
 MAX_PADS = 4  # XInput only sees four pads
-MAX_MSG = 4096
+MAX_MSG = 65536  # room for a layout sent to be saved as a profile
 
 
 class PadManager:
@@ -65,15 +68,25 @@ class PadManager:
         self._owners.clear()
 
 
+def _keys(packet):
+    """Key names held according to a packet ("k": ["W", "SPACE"])."""
+    k = packet.get("k")
+    if not isinstance(k, list):
+        return frozenset()
+    return frozenset(x for x in k[:16] if isinstance(x, str) and x in KEYS)
+
+
 class Session:
-    def __init__(self, ws):
+    def __init__(self, ws, keyboard):
         self.ws = ws
+        self.keyboard = keyboard
         self.pad = None
         self.client_id = None
         self.last_seq = -1
         self.last_rx = 0.0
         self.live = False  # inputs applied since the last neutral reset
         self.latch = ButtonLatch()
+        self.key_latch = ButtonLatch()   # same minimum press lengths for keys
         self.state = NEUTRAL
         self._timer = None
         self.audit = TapAudit()
@@ -103,14 +116,16 @@ class Session:
         now = time.perf_counter()
         self.state = map_state(packet)
         self._show(self.latch.update(self.state.buttons, now))
+        self.keyboard.set(self, self.key_latch.update(_keys(packet), now))
         self.audit.phone(packet.get("tp"), packet.get("tc"), now)
         self.last_rx = time.monotonic()
         self.live = True
         self._schedule()
 
     def _schedule(self):
-        """Wake up when a press/release held back by the latch is due."""
-        due = self.latch.next_due()
+        """Wake up when a press/release held back by a latch is due."""
+        dues = [d for d in (self.latch.next_due(), self.key_latch.next_due()) if d is not None]
+        due = min(dues) if dues else None
         if due is None or self._timer is not None:
             return
         delay = max(0.0, due - time.perf_counter())
@@ -119,7 +134,9 @@ class Session:
     def _replay(self):
         self._timer = None
         if self.live and self.pad is not None:
-            self._show(self.latch.output(time.perf_counter()))
+            now = time.perf_counter()
+            self._show(self.latch.output(now))
+            self.keyboard.set(self, self.key_latch.output(now))
             self._schedule()
 
     def _show(self, buttons):
@@ -132,10 +149,12 @@ class Session:
             self._timer.cancel()
             self._timer = None
         self.latch.reset()
+        self.key_latch.reset()
+        self.keyboard.set(self, frozenset())
         self.state = NEUTRAL
 
     def failsafe(self):
-        if self.latch.next_due() is None:
+        if self.latch.next_due() is None and self.key_latch.next_due() is None:
             self.audit.check(self.client_id, time.perf_counter())
         if self.live and time.monotonic() - self.last_rx > FAILSAFE_S:
             self.stop()
@@ -216,7 +235,7 @@ async def ws_handler(request):
 
     ws = web.WebSocketResponse(heartbeat=5, max_msg_size=MAX_MSG)
     await ws.prepare(request)
-    session = Session(ws)
+    session = Session(ws, app["keyboard"])
     pads = app["pads"]
     watchdog = asyncio.create_task(_watchdog(session))
     log.info("Phone connected from %s", request.remote)
@@ -240,6 +259,13 @@ async def ws_handler(request):
                 await ws.send_json({"t": "pong", "id": packet.get("id"), "ts": packet.get("ts")})
             elif kind == "settings" and session.client_id is not None:
                 app["settings"].put(session.client_id, packet.get("values"), packet.get("ts"))
+            elif kind == "saveProfile" and session.client_id is not None:
+                name = app["profiles"].save(packet.get("name"), packet.get("layout"))
+                await ws.send_json({"t": "profileSaved", "name": name,
+                                    "error": None if name else "Could not save that layout on the PC."})
+                if name:
+                    log.info("%s: saved profile %r", session.client_id, name)
+                    notify_profiles(app)
             elif kind == "hello" and session.pad is None:
                 client_id = str(packet.get("id") or request.remote)[:64]
                 pad, previous = pads.claim(client_id, session)
@@ -254,13 +280,31 @@ async def ws_handler(request):
                 log.info("%s: hello (layout %s)", client_id, packet.get("layout"))
                 # Saved settings let a phone get its tuning back in a new browser.
                 await ws.send_json({"t": "welcome", "settings": app["settings"].get(client_id)})
+                app["sessions"].add(session)
+                await ws.send_json(profile_message(app))
     finally:
         watchdog.cancel()
         session.stop()
+        app["sessions"].discard(session)
         if session.client_id is not None:
             pads.release(session.client_id, session)
         log.info("Phone disconnected (%s), inputs released", session.client_id or request.remote)
     return ws
+
+
+def profile_message(app):
+    """What phones need to know about PC profiles: the list and the active one."""
+    profiles = app["profiles"]
+    active = profiles.active()
+    return {"t": "profile", "names": profiles.names(), "active": active,
+            "layout": profiles.layout(active) if active else None}
+
+
+def notify_profiles(app):
+    """Send the current profile state to every connected phone."""
+    msg = profile_message(app)
+    for session in list(app["sessions"]):
+        asyncio.ensure_future(session._send(msg))
 
 
 async def index(request):
@@ -279,8 +323,11 @@ async def no_cache(request, handler):
     return resp
 
 
-def create_app(token, pad_factory, settings_path=None):
+def create_app(token, pad_factory, settings_path=None, keyboard=None, profiles_path=None):
     app = web.Application(middlewares=[no_cache])
+    app["profiles"] = Profiles(profiles_path)
+    app["sessions"] = set()
+    app["keyboard"] = keyboard or Keyboard(LogKeys())
     app["token"] = token
     app["pads"] = PadManager(pad_factory)
     app["settings"] = SettingsStore(settings_path)
@@ -291,6 +338,7 @@ def create_app(token, pad_factory, settings_path=None):
 
     async def on_shutdown(app):
         app["pads"].close_all()
+        app["keyboard"].close()
 
     app.on_shutdown.append(on_shutdown)
     return app

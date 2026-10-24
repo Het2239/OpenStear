@@ -7,6 +7,8 @@
 // between packets (see buttons.js). Display-only controls also have
 // `render(info)`, called every animation frame.
 
+import { KEYS } from "./keys.js";
+
 // Bit i of the packet's button mask is BUTTONS[i]. Must match
 // DEFAULT_BUTTONS in host/mapper.py (tests check this).
 export const BUTTONS = [
@@ -93,25 +95,69 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 // --- interactive controls ----------------------------------------------------
 
+// What a button sends, from its `map`:
+//   "A" .. "GUIDE"   an Xbox button
+//   "key:W"          a keyboard key (pressed on the PC)
+//   "axis:+rt"       pushes an axis fully: +/- with lx ly rx ry, + with lt rt
+export function parseTarget(map) {
+  if (typeof map !== "string") return null;
+  if (BUTTONS.includes(map)) return { kind: "button", mask: bit(map) };
+  if (map.startsWith("key:") && KEYS.includes(map.slice(4))) return { kind: "key", key: map.slice(4) };
+  const m = /^axis:([+-])(lx|ly|rx|ry|lt|rt)$/.exec(map);
+  if (m && !(m[1] === "-" && (m[2] === "lt" || m[2] === "rt"))) {
+    return { kind: "axis", axis: m[2], value: m[1] === "-" ? -1 : 1 };
+  }
+  return null;
+}
+
+// Modes: "hold" (default) follows the finger; "toggle" turns on with one tap
+// and off with the next; "pulse" sends one short press per tap.
+const PULSE_AXIS_MS = 80;
+
 function button(def, ctx, id) {
   const el = box(def, `button ${def.shape === "rect" ? "rect" : "round"}`);
   const face = document.createElement("div");
   face.className = "face";
   labelEl(def, face);
   el.append(face);
-  const mask = bit(def.map);
-  let down = false;
+  const target = parseTarget(def.map) || { kind: "button", mask: 0 };
+  const mode = def.mode === "toggle" || def.mode === "pulse" ? def.mode : "hold";
+  let down = false;       // finger on the button
+  let on = false;         // what we are sending
+  let axisUntil = 0;      // pulse end time for axis targets
+
+  const send = (value) => {
+    if (value && target.kind === "button") stats.taps++;  // presses the PC should see
+    on = value;
+    el.classList.toggle("latched", mode === "toggle" && on);
+    if (target.kind === "button") ctx.hold(id, on ? target.mask : 0);
+    else if (target.kind === "key") ctx.holdKey(id, target.key, on);
+  };
+
   track(el, (active) => {
     if (active === down) return;
-    if (active) {
-      stats.taps++;
-      haptic();
-    }
     down = active;
     el.classList.toggle("pressed", down);
-    ctx.hold(id, down ? mask : 0);
+    if (down) haptic();
+    if (mode === "hold") {
+      send(down);
+    } else if (down && mode === "toggle") {
+      send(!on);
+    } else if (down && mode === "pulse") {
+      // Press and release at once; the latch stretches it to a full press.
+      send(true);
+      send(false);
+      axisUntil = performance.now() + PULSE_AXIS_MS;
+    }
   });
-  return { el, read() {} };
+  return {
+    el,
+    read(out) {
+      if (target.kind !== "axis") return;
+      const active = mode === "pulse" ? performance.now() < axisUntil : on;
+      if (active) out[target.axis] = target.value;
+    },
+  };
 }
 
 // Vertical slider: finger height sets the value, release returns to 0.

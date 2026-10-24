@@ -535,3 +535,20 @@ body.doc {
 @media (max-width: 700px) {
   #editbar .hint { display: none; }
 }
+
+/* Toggle-mode button that is switched on */
+.button.latched .face { background: color-mix(in srgb, var(--c, var(--accent)) 30%, var(--panel)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c, var(--accent)) 45%, transparent); }
+
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(17, 20, 24, .95);
+  font-size: 13px;
+  z-index: 10;
+  pointer-events: none;
+}

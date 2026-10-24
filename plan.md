@@ -202,9 +202,9 @@ Do steps 3–7 on the phone so the dash shows exactly what is sent. The host onl
 - [x] Import/export layouts as files so people can share them
 
 ### Phase 5: Remapping
-- [ ] Each control maps to any Xbox button, axis, or keyboard key
-- [ ] Modes: Normal (hold), Toggle, Pulse (one short press)
-- [ ] Host UI to manage profiles per game
+- [x] Each control maps to any Xbox button, axis, or keyboard key
+- [x] Modes: Normal (hold), Toggle, Pulse (one short press)
+- [x] Host UI to manage profiles per game
 
 ### Phase 6: Telemetry and dash
 - [ ] Host listens on UDP 20777, parses F1 packets (car telemetry, lap data, car status)

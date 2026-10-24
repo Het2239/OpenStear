@@ -5,6 +5,7 @@
 // resize, tap it to edit its properties. Positions snap to 1% of the screen.
 
 import { AXES, BUTTONS, create } from "./controls.js";
+import { KEYS } from "./keys.js";
 import { COLORS, validateLayout } from "./layoutlib.js";
 
 const MIN_SIZE = 4;
@@ -24,6 +25,19 @@ export const ADDABLE = {
   "Steering meter": { type: "dash", x: 30, y: 12, w: 40, h: 14 },
   "Background panel": { type: "panel", style: "wheel", x: 20, y: 0, w: 60, h: 100 },
 };
+
+// Everything a button can send, grouped for the "Sends" menu.
+const TARGETS = [
+  ["Xbox button", BUTTONS.map((b) => [b, b.replace("_", " ")])],
+  ["Axis (full)", [
+    ["axis:+rt", "RT (gas)"], ["axis:+lt", "LT (brake)"],
+    ["axis:-lx", "Left stick ◀"], ["axis:+lx", "Left stick ▶"],
+    ["axis:+ly", "Left stick ▲"], ["axis:-ly", "Left stick ▼"],
+    ["axis:-rx", "Right stick ◀"], ["axis:+rx", "Right stick ▶"],
+    ["axis:+ry", "Right stick ▲"], ["axis:-ry", "Right stick ▼"],
+  ]],
+  ["Keyboard key", KEYS.map((k) => [`key:${k}`, k])],
+];
 
 const round = (v) => Math.round(v);
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -196,7 +210,16 @@ export class Editor {
     };
     const select = (options, value, onChange) => {
       const s = document.createElement("select");
-      for (const [v, t] of options) s.append(Object.assign(document.createElement("option"), { value: v, textContent: t }));
+      for (const [v, t] of options) {
+        if (Array.isArray(t)) {
+          // [groupLabel, [[value, text], ...]] -> <optgroup>
+          const g = Object.assign(document.createElement("optgroup"), { label: v });
+          for (const [gv, gt] of t) g.append(Object.assign(document.createElement("option"), { value: gv, textContent: gt }));
+          s.append(g);
+        } else {
+          s.append(Object.assign(document.createElement("option"), { value: v, textContent: t }));
+        }
+      }
       s.value = value;
       s.addEventListener("change", () => { onChange(s.value); this.render(); });
       return s;
@@ -214,7 +237,11 @@ export class Editor {
     if (["button", "pedal", "nudge", "panel"].includes(def.type)) field("Label", textInput("label", 12));
     if (def.type === "button" || def.type === "dpad") field("Small text", textInput("sub", 12));
     if (def.type === "button") {
-      field("Sends", select(BUTTONS.map((b) => [b, b.replace("_", " ")]), def.map, (v) => { def.map = v; }));
+      field("Sends", select(TARGETS, def.map, (v) => { def.map = v; }));
+      field("Mode", select(
+        [["hold", "Hold (while pressed)"], ["toggle", "Toggle (tap on / tap off)"], ["pulse", "Pulse (one short press)"]],
+        def.mode || "hold", (v) => { if (v === "hold") delete def.mode; else def.mode = v; },
+      ));
       field("Shape", select([["round", "Round"], ["rect", "Rectangle"]], def.shape || "round", (v) => {
         if (v === "rect") def.shape = "rect"; else delete def.shape;
       }));

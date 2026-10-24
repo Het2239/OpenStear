@@ -39,8 +39,10 @@
         <button id="menu-export" type="button" class="chip">Export</button>
         <button id="menu-import" type="button" class="chip">Import…</button>
         <button id="menu-delete" type="button" class="chip danger" hidden>Delete</button>
+        <button id="menu-save-pc" type="button" class="chip">Save to PC as profile</button>
         <span class="small">☆ = add to quick switch (⇄)</span>
       </p>
+      <p id="menu-pc" class="small"></p>
       <p id="menu-error" class="small warn"></p>
       <input id="import-file" type="file" accept=".json,application/json" hidden>
     </div>
@@ -67,6 +69,8 @@
 
   <div id="editbar" hidden></div>
   <div id="editprops" hidden></div>
+
+  <div id="toast" hidden></div>
 
   <div id="rotate">Turn the phone to landscape</div>
 

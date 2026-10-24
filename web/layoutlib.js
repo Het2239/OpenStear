@@ -1,6 +1,6 @@
 // Layout validation, custom layout storage, file import/export, quick-switch pages.
 
-import { AXES, BUTTONS, TYPES } from "./controls.js";
+import { AXES, TYPES, parseTarget } from "./controls.js";
 
 const CUSTOM_KEY = "os.customLayouts";
 const PAGES_KEY = "os.pages";
@@ -31,9 +31,10 @@ function cleanControl(c) {
   if (COLORS.includes(c.color)) out.color = c.color;
   switch (c.type) {
     case "button":
-      if (!BUTTONS.includes(c.map)) return null;
+      if (!parseTarget(c.map)) return null;
       out.map = c.map;
       if (c.shape === "rect") out.shape = "rect";
+      if (c.mode === "toggle" || c.mode === "pulse") out.mode = c.mode;
       break;
     case "pedal":
       out.axis = AXES.includes(c.axis) ? c.axis : "rt";
