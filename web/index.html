@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#111418">
+  <title>OpenSteer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="pad">
+    <section class="pedal" id="brake" data-axis="brk">
+      <div class="fill"></div><span>BRAKE</span>
+    </section>
+
+    <section id="center">
+      <header id="status">
+        <span id="conn" class="dot"></span>
+        <span id="conn-text">offline</span>
+        <span id="ping">– ms</span>
+        <button id="calibrate" type="button">Center</button>
+      </header>
+
+      <div id="steer-meter"><div id="steer-needle"></div></div>
+      <div id="readout">
+        <span>steer <b id="r-steer">0.00</b></span>
+        <span>thr <b id="r-thr">0.00</b></span>
+        <span>brk <b id="r-brk">0.00</b></span>
+      </div>
+
+      <div id="buttons">
+        <button class="btn" data-bit="3" style="grid-area: y">Y</button>
+        <button class="btn" data-bit="2" style="grid-area: x">X</button>
+        <button class="btn" data-bit="1" style="grid-area: b">B</button>
+        <button class="btn" data-bit="0" style="grid-area: a">A</button>
+      </div>
+    </section>
+
+    <section class="pedal" id="throttle" data-axis="thr">
+      <div class="fill"></div><span>GAS</span>
+    </section>
+  </main>
+
+  <div id="overlay">
+    <div class="card">
+      <h1>OpenSteer</h1>
+      <p id="overlay-msg">Hold the phone in landscape like a wheel, level, then tap Start.</p>
+      <button id="start" type="button">Start</button>
+    </div>
+  </div>
+
+  <div id="rotate">Turn the phone to landscape</div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
