@@ -19,7 +19,9 @@ jobs:
           python-version: ${{ matrix.python }}
       # vgamepad is left out here; the vigem job below covers it.
       - run: pip install aiohttp "qrcode[pil]" cryptography psutil pytest pytest-aiohttp
-      - run: python -m pytest -v
+      - run: python -m pytest -v --junitxml=junit.xml
+      - if: failure()
+        run: python .github/scripts/annotate_failures.py junit.xml
 
   # Installs the real ViGEmBus driver and checks that a virtual pad driven by
   # host/gamepad.py shows up in XInput with the right values.
@@ -38,11 +40,23 @@ jobs:
           Invoke-WebRequest $url -OutFile vigem.exe
           $hash = (Get-FileHash vigem.exe -Algorithm SHA256).Hash
           if ($hash -ne "89220A7865076B342892F98865F3499FB7C4CFD673159E89D352C360FD014C6A") { throw "checksum mismatch: $hash" }
-          $p = Start-Process vigem.exe -ArgumentList "/install","/quiet","/norestart" -Wait -PassThru
-          if ($p.ExitCode -notin 0, 3010) { throw "installer exit code $($p.ExitCode)" }
+          $p = Start-Process vigem.exe -ArgumentList "/install","/quiet","/norestart","/log","$PWD\vigem.log" -PassThru
+          $done = $p.WaitForExit(240000)
+          if (-not $done) {
+            Get-Process | Where-Object { $_.MainWindowTitle } | ForEach-Object { Write-Output "::warning::window: $($_.ProcessName) - $($_.MainWindowTitle)" }
+            Get-ChildItem $env:TEMP -Filter "*ViGEm*.log" -Recurse -ErrorAction SilentlyContinue | ForEach-Object { Get-Content $_.FullName -Tail 15 | ForEach-Object { Write-Output "::warning::$_" } }
+            if (Test-Path vigem.log) { Get-Content vigem.log -Tail 25 | ForEach-Object { Write-Output "::warning::$_" } }
+            throw "installer did not finish in 4 minutes"
+          }
+          if ($p.ExitCode -notin 0, 3010) {
+            if (Test-Path vigem.log) { Get-Content vigem.log -Tail 25 | ForEach-Object { Write-Output "::warning::$_" } }
+            throw "installer exit code $($p.ExitCode)"
+          }
       # With the driver present, vgamepad's setup skips its own interactive installer.
       - run: pip install -r requirements-dev.txt
         timeout-minutes: 5
-      - run: python -m pytest -v tests/test_vigem_real.py tests/test_gamepad.py
+      - run: python -m pytest -v tests/test_vigem_real.py tests/test_gamepad.py --junitxml=junit.xml
         env:
           OPENSTEER_VIGEM_TEST: "1"
+      - if: failure()
+        run: python .github/scripts/annotate_failures.py junit.xml
