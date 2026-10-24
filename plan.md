@@ -195,12 +195,11 @@ Do steps 3–7 on the phone so the dash shows exactly what is sent. The host onl
 
 ### Phase 4: Layouts
 - [x] Layout format as JSON: list of controls with type, position, size, mapping
-- [x] Presets: Classic wheel, F1 wheel, F1 simple, Xbox style, PlayStation style
-- [ ] More presets: Combo + shifter, Arcade
-- [ ] Alternative steering: on-screen wheel (with configurable rotation, e.g. 900°, and auto-centre) and hold ◀ / ▶ buttons
-- [ ] Drag-and-drop editor: move, resize, add, delete controls; save as custom layout
-- [ ] Page switcher: several layouts, switch mid-game (on foot / car / plane)
-- [ ] Import/export layouts as files so people can share them
+- [x] Presets: Classic wheel, F1 wheel, F1 simple, Touch wheel, Arcade, Xbox style, PlayStation style
+- [x] Alternative steering: on-screen wheel (with configurable rotation, e.g. 900°, and auto-centre) and hold ◀ / ▶ buttons
+- [x] Drag-and-drop editor: move, resize, add, delete controls; save as custom layout
+- [x] Page switcher: several layouts, switch mid-game (on foot / car / plane)
+- [x] Import/export layouts as files so people can share them
 
 ### Phase 5: Remapping
 - [ ] Each control maps to any Xbox button, axis, or keyboard key

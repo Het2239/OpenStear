@@ -3,6 +3,10 @@ import { AXES, create, prefs, stats } from "./controls.js";
 import { buildSheet, defaults, loadLocal, saveLocal } from "./settings.js";
 import { ButtonLatch } from "./buttons.js";
 import { Rumble } from "./rumble.js";
+import { Editor } from "./editor.js";
+import {
+  exportLayout, importFile, loadCustom, loadPages, newId, saveCustom, savePages,
+} from "./layoutlib.js";
 
 const PING_MS = 1000;
 // Above this many unsent bytes, skip packets that repeat the last one.
@@ -46,6 +50,7 @@ let sendTimer = null;
 let lastTick = performance.now();
 let pushTimer = null;
 const latch = new ButtonLatch();
+const editor = new Editor({ pad: $("pad"), bar: $("editbar"), props: $("editprops") });
 const rumble = new Rumble();
 let latchTimer = null;
 let lastSent = "";
@@ -58,9 +63,17 @@ function zeroState() {
 
 // --- Layouts -----------------------------------------------------------------
 
+let presets = [];
+let pages = loadPages();   // layout ids on the quick-switch list (⇄)
+
 async function loadLayouts() {
   const ids = await (await fetch("layouts/index.json")).json();
-  layouts = await Promise.all(ids.map((id) => fetch(`layouts/${id}.json`).then((r) => r.json())));
+  presets = await Promise.all(ids.map((id) => fetch(`layouts/${id}.json`).then((r) => r.json())));
+  layouts = [...presets, ...loadCustom()];
+}
+
+function saveCustomLayouts() {
+  saveCustom(layouts.filter((l) => l.custom));
 }
 
 function useLayout(id) {
@@ -69,11 +82,14 @@ function useLayout(id) {
   const pad = $("pad");
   pad.replaceChildren();
   pad.dataset.layout = layout.id;
+  pages = pages.filter((p) => layouts.some((l) => l.id === p));
   const ctx = {
     layout, openMenu, openSettings,
     calibrate: () => tilt.calibrate(),
     // A button changed: record the edge and send it now, not at the next tick.
     hold: (id, mask) => { latch.hold(id, mask, performance.now()); tick(); },
+    pages: pages.length >= 2 ? pages : null,
+    nextPage,
   };
   latch.reset();
   controls = layout.controls.map((def, i) => create(def, ctx, i));
@@ -86,6 +102,18 @@ function useLayout(id) {
   $("overlay-layout").textContent = `Layout: ${layout.name} (change)`;
 }
 
+// ⇄ in the status bar: jump to the next layout on the quick-switch list.
+function nextPage() {
+  if (pages.length < 2) return;
+  const i = pages.indexOf(layout.id);
+  chooseLayout(pages[(i + 1) % pages.length]);
+}
+
+function togglePage(id) {
+  pages = pages.includes(id) ? pages.filter((p) => p !== id) : [...pages, id];
+  savePages(pages);
+}
+
 function openMenu() {
   const list = $("menu-list");
   list.replaceChildren();
@@ -95,17 +123,27 @@ function openMenu() {
     h.textContent = group;
     list.append(h);
     for (const l of layouts.filter((x) => x.group === group)) {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = `choice${l.id === layout.id ? " current" : ""}`;
-      b.innerHTML = `<b></b><span></span>`;
-      b.querySelector("b").textContent = l.name;
-      b.querySelector("span").textContent = l.tilt ? "tilt steering" : "touch only";
-      b.addEventListener("click", () => chooseLayout(l.id));
-      list.append(b);
+      const row = document.createElement("div");
+      row.className = `choice${l.id === layout.id ? " current" : ""}`;
+      row.innerHTML = `<button type="button" class="pick"><b></b><span></span></button>
+        <button type="button" class="star" aria-label="Quick switch"></button>`;
+      row.querySelector("b").textContent = l.name;
+      row.querySelector("span").textContent = l.tilt ? "tilt steering" : "touch";
+      row.querySelector(".pick").addEventListener("click", () => chooseLayout(l.id));
+      const star = row.querySelector(".star");
+      const paint = () => {
+        star.textContent = pages.includes(l.id) ? "★" : "☆";
+        star.classList.toggle("on", pages.includes(l.id));
+      };
+      paint();
+      star.addEventListener("click", () => { togglePage(l.id); paint(); useLayout(layout.id); });
+      list.append(row);
     }
   }
   $("menu-notes").textContent = layout.notes || "";
+  $("menu-delete").hidden = !layout.custom;
+  $("menu-edit").textContent = layout.custom ? "Edit layout" : "Customise (copy)";
+  $("menu-error").textContent = "";
   $("menu").hidden = false;
 }
 
@@ -113,9 +151,52 @@ async function chooseLayout(id) {
   useLayout(id);
   $("menu").hidden = true;
   // This tap counts as a user gesture, which iPhone needs to grant motion access.
-  if (layout.tilt && running() && !tiltStarted) await startTilt();
+  if (layout.tilt && running() && !tiltStarted) await startTilt().catch(() => {});
   if (layout.tilt) setTimeout(() => tilt.calibrate(), 150);
 }
+
+// Edit the current layout; presets are edited as a new custom copy.
+function editLayout() {
+  $("menu").hidden = true;
+  const source = layout.custom
+    ? layout
+    : { ...layout, id: newId(), name: `${layout.name} (custom)`, group: "Custom", notes: undefined };
+  editor.open(source, (saved) => {
+    if (saved) {
+      const entry = { ...saved, id: source.id, group: "Custom", custom: true };
+      layouts = [...layouts.filter((l) => l.id !== entry.id), entry];
+      saveCustomLayouts();
+      useLayout(entry.id);
+    } else {
+      useLayout(layout.id);
+    }
+  });
+}
+
+$("menu-edit").addEventListener("click", editLayout);
+$("menu-export").addEventListener("click", () => exportLayout(layout));
+$("menu-import").addEventListener("click", () => $("import-file").click());
+$("import-file").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  try {
+    const imported = await importFile(file);
+    layouts = [...layouts, imported];
+    saveCustomLayouts();
+    chooseLayout(imported.id);
+  } catch (err) {
+    $("menu-error").textContent = err.message;
+  }
+});
+$("menu-delete").addEventListener("click", () => {
+  if (!layout.custom || !confirm(`Delete "${layout.name}"?`)) return;
+  layouts = layouts.filter((l) => l.id !== layout.id);
+  saveCustomLayouts();
+  pages = pages.filter((p) => p !== layout.id);
+  savePages(pages);
+  chooseLayout(DEFAULT_LAYOUT);
+});
 
 // --- Settings ----------------------------------------------------------------
 

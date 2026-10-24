@@ -1,0 +1,19 @@
+{
+  "id": "arcade",
+  "name": "Arcade",
+  "group": "Racing",
+  "tilt": false,
+  "notes": "Hold ◀ / ▶ to steer: it ramps to full lock in a quarter second and eases back when released.",
+  "controls": [
+    {"type": "nudge", "axis": "lx", "dir": -1, "label": "◀", "x": 0, "y": 40, "w": 19, "h": 60},
+    {"type": "nudge", "axis": "lx", "dir": 1, "label": "▶", "x": 20, "y": 40, "w": 19, "h": 60},
+    {"type": "pedal", "axis": "lt", "label": "BRAKE", "color": "red", "x": 61, "y": 0, "w": 19, "h": 100},
+    {"type": "pedal", "axis": "rt", "label": "GAS", "color": "green", "x": 81, "y": 0, "w": 19, "h": 100},
+    {"type": "status", "x": 0, "y": 0, "w": 59, "h": 11},
+    {"type": "dash", "x": 0, "y": 13, "w": 39, "h": 15},
+    {"type": "button", "map": "A", "label": "A", "color": "green", "x": 41, "y": 40, "w": 18, "h": 28},
+    {"type": "button", "map": "B", "label": "B", "color": "red", "x": 41, "y": 70, "w": 18, "h": 28},
+    {"type": "button", "map": "X", "label": "X", "color": "blue", "x": 41, "y": 13, "w": 9, "h": 18},
+    {"type": "button", "map": "Y", "label": "Y", "color": "yellow", "x": 50, "y": 13, "w": 9, "h": 18}
+  ]
+}

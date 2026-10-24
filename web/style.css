@@ -303,16 +303,32 @@ button { font: inherit; color: inherit; }
 #menu-list h3 { grid-column: 1 / -1; }
 .choice {
   display: flex;
+  align-items: stretch;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.choice .pick {
+  flex: 1;
+  display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
   padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--panel);
+  border: 0;
+  background: none;
   text-align: left;
 }
-.choice span { font-size: 12px; color: var(--muted); }
+.choice .pick span { font-size: 12px; color: var(--muted); }
+.choice .star {
+  padding: 0 12px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: none;
+  color: var(--muted);
+  font-size: 18px;
+}
+.choice .star.on { color: #f5c542; }
 .choice.current { border-color: var(--accent); }
 .small { font-size: 13px; color: var(--muted); }
 
@@ -404,4 +420,118 @@ body.doc {
 @container (max-width: 330px) {
   .status .conn, .status .menu .name { display: none; }
   .status .chip { max-width: none; }
+}
+
+/* On-screen steering wheel */
+.wheel { display: grid; place-items: center; }
+.wheel .rim {
+  position: relative;
+  width: min(100cqw, 100cqh);
+  height: min(100cqw, 100cqh);
+  border-radius: 50%;
+  border: max(10px, min(7cqw, 7cqh)) solid #2a313b;
+  box-shadow: inset 0 0 0 2px #3a434f, 0 0 0 2px #3a434f;
+  will-change: transform;
+}
+.wheel .spoke { position: absolute; background: #2a313b; }
+.wheel .spoke.l, .wheel .spoke.r { top: 46%; height: 8%; width: 36%; }
+.wheel .spoke.l { left: 0; }
+.wheel .spoke.r { right: 0; }
+.wheel .spoke.b { left: 46%; width: 8%; top: 50%; height: 50%; }
+.wheel .hub {
+  position: absolute;
+  inset: 36%;
+  border-radius: 50%;
+  background: var(--panel);
+  border: 2px solid #3a434f;
+}
+.wheel .mark {
+  position: absolute;
+  left: 47%; width: 6%; top: -2%; height: 10%;
+  border-radius: 3px;
+  background: var(--accent);
+}
+.nudge .face { font-size: max(22px, min(36cqw, 36cqh)) !important; }
+
+.actions-row.wrap { flex-wrap: wrap; }
+.chip.danger { color: var(--brake); border-color: color-mix(in srgb, var(--brake) 50%, var(--line)); }
+.chip.primary { background: var(--accent); border-color: var(--accent); }
+.status .page { flex: none; max-width: none; }
+
+/* Layout editor */
+#pad.editing .ghost { pointer-events: none; opacity: .55; }
+.editbox {
+  position: absolute;
+  border: 1.5px dashed rgba(232, 236, 241, .45);
+  border-radius: 6px;
+  touch-action: none;
+  cursor: move;
+}
+.editbox.selected { border: 2px solid var(--accent); background: rgba(62, 142, 247, .08); }
+.editbox.clash { border-color: var(--brake); background: rgba(229, 72, 77, .1); }
+.editbox .handle {
+  position: absolute;
+  right: -2px; bottom: -2px;
+  width: 22px; height: 22px;
+  border-radius: 6px 0 6px 0;
+  background: var(--accent);
+  cursor: nwse-resize;
+}
+#editbar {
+  position: fixed;
+  top: max(4px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 16px);
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(17, 20, 24, .94);
+  z-index: 5;
+  font-size: 13px;
+}
+#editbar.bottom { top: auto; bottom: max(4px, env(safe-area-inset-bottom)); }
+#editbar .name {
+  width: 140px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+}
+#editbar select.chip { color: var(--text); }
+#editbar .hint { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+#editbar label.chip { display: flex; align-items: center; gap: 4px; max-width: none; white-space: nowrap; }
+#editprops {
+  position: fixed;
+  right: max(8px, env(safe-area-inset-right));
+  bottom: max(8px, env(safe-area-inset-bottom));
+  width: min(260px, 45vw);
+  max-height: calc(100% - 70px);
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(17, 20, 24, .96);
+  z-index: 5;
+  font-size: 13px;
+  touch-action: pan-y;
+}
+#editprops header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+#editprops header b { text-transform: capitalize; }
+.prop { display: grid; grid-template-columns: 90px 1fr; align-items: center; gap: 6px; margin: 6px 0; }
+.prop span { color: var(--muted); }
+.prop input:not([type="checkbox"]), .prop select {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+}
+@media (max-width: 700px) {
+  #editbar .hint { display: none; }
 }

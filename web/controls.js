@@ -213,6 +213,95 @@ function dpad(def, ctx, id) {
   return { el, read() {} };
 }
 
+// On-screen steering wheel: turn it with a finger. `lock` is the total
+// rotation lock to lock (e.g. 900 = 450° each way); `autocenter` springs it
+// back when released.
+const WHEEL_RETURN_DEG_S = 900;
+
+function wheel(def) {
+  const el = box(def, "wheel");
+  const face = document.createElement("div");
+  face.className = "rim";
+  face.innerHTML = `<div class="spoke l"></div><div class="spoke r"></div><div class="spoke b"></div>
+    <div class="hub"></div><div class="mark"></div>`;
+  el.append(face);
+  const half = (def.lock || 900) / 2;
+  const autocenter = def.autocenter !== false;
+  let angle = 0;          // wheel rotation, degrees, + = clockwise
+  let finger = null;      // last finger angle around the centre
+  let touching = false;
+  let last = performance.now();
+
+  const fingerAngle = (e) => {
+    const r = face.getBoundingClientRect();
+    return Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)) * 180 / Math.PI;
+  };
+  track(el, (active, e) => {
+    if (!active) {
+      touching = false;
+      finger = null;
+      return;
+    }
+    const a = fingerAngle(e);
+    if (touching && finger !== null) {
+      // Accumulate small steps so the wheel can turn more than one revolution.
+      const step = ((a - finger + 540) % 360) - 180;
+      angle = clamp(angle + step, -half, half);
+    }
+    finger = a;
+    touching = true;
+  });
+  return {
+    el,
+    read(out) {
+      const now = performance.now();
+      const dt = Math.min(now - last, 100) / 1000;
+      last = now;
+      if (!touching && autocenter && angle) {
+        const back = WHEEL_RETURN_DEG_S * dt;
+        angle = Math.abs(angle) <= back ? 0 : angle - Math.sign(angle) * back;
+      }
+      face.style.transform = `rotate(${angle}deg)`;
+      if (angle) out.lx = clamp(angle / half, -1, 1);
+    },
+  };
+}
+
+// Hold-to-steer button: while held, its axis ramps toward `dir` (-1 or 1);
+// released, it eases back to centre. Two of them make arcade steering.
+const NUDGE_IN_S = 0.25;   // time to reach full lock
+const NUDGE_OUT_S = 0.12;  // time to return to centre
+
+function nudge(def) {
+  const el = box(def, "button rect nudge");
+  const face = document.createElement("div");
+  face.className = "face";
+  labelEl(def, face);
+  el.append(face);
+  const dir = def.dir < 0 ? -1 : 1;
+  const axis = def.axis || "lx";
+  let held = false;
+  let value = 0;
+  let last = performance.now();
+  track(el, (active) => {
+    if (active && !held) haptic();
+    held = active;
+    el.classList.toggle("pressed", held);
+  });
+  return {
+    el,
+    read(out) {
+      const now = performance.now();
+      const dt = Math.min(now - last, 100) / 1000;
+      last = now;
+      value = held
+        ? Math.min(1, value + dt / NUDGE_IN_S)
+        : Math.max(0, value - dt / NUDGE_OUT_S);
+      if (value) out[axis] = clamp(out[axis] + dir * value, -1, 1);
+    },
+  };
+}
+
 // --- display controls --------------------------------------------------------
 
 function status(def, ctx) {
@@ -222,6 +311,7 @@ function status(def, ctx) {
     <span class="ping">– ms</span>
     <span class="debug" hidden></span>
     <button type="button" class="chip center" hidden>Center</button>
+    <button type="button" class="chip page" aria-label="Next layout" hidden>⇄</button>
     <button type="button" class="chip gear" aria-label="Settings">⚙</button>
     <button type="button" class="chip menu"></button>`;
   const q = (s) => el.querySelector(s);
@@ -229,6 +319,10 @@ function status(def, ctx) {
   q(".menu .name").textContent = ctx.layout.name;
   q(".menu").addEventListener("click", ctx.openMenu);
   q(".gear").addEventListener("click", ctx.openSettings);
+  if (ctx.pages) {
+    q(".page").hidden = false;
+    q(".page").addEventListener("click", ctx.nextPage);
+  }
   if (ctx.layout.tilt) {
     q(".center").hidden = false;
     q(".center").addEventListener("click", ctx.calibrate);
@@ -276,7 +370,7 @@ function panel(def) {
   return { el, read() {} };
 }
 
-export const TYPES = { button, pedal, stick, dpad, status, dash, panel };
+export const TYPES = { button, pedal, stick, dpad, wheel, nudge, status, dash, panel };
 
 export function create(def, ctx, id) {
   const make = TYPES[def.type];

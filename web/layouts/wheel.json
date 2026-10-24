@@ -1,0 +1,21 @@
+{
+  "id": "wheel",
+  "name": "Touch wheel",
+  "group": "Racing",
+  "tilt": false,
+  "notes": "Turn the on-screen wheel with one thumb (900° lock to lock, springs back to centre).",
+  "controls": [
+    {"type": "button", "shape": "rect", "map": "LB", "label": "−", "sub": "GEAR", "color": "paddle", "x": 0, "y": 0, "w": 18, "h": 30},
+    {"type": "button", "shape": "rect", "map": "RB", "label": "+", "sub": "GEAR", "color": "paddle", "x": 82, "y": 0, "w": 18, "h": 30},
+    {"type": "pedal", "axis": "lt", "label": "BRAKE", "color": "red", "x": 0, "y": 33, "w": 18, "h": 67},
+    {"type": "pedal", "axis": "rt", "label": "GAS", "color": "green", "x": 82, "y": 33, "w": 18, "h": 67},
+    {"type": "status", "x": 20, "y": 0, "w": 60, "h": 11},
+    {"type": "wheel", "lock": 900, "autocenter": true, "x": 30, "y": 13, "w": 40, "h": 87},
+    {"type": "button", "map": "Y", "label": "Y", "color": "yellow", "x": 20, "y": 14, "w": 9, "h": 18},
+    {"type": "button", "map": "X", "label": "X", "color": "blue", "x": 20, "y": 34, "w": 9, "h": 18},
+    {"type": "button", "map": "B", "label": "B", "color": "red", "x": 71, "y": 14, "w": 9, "h": 18},
+    {"type": "button", "map": "A", "label": "A", "color": "green", "x": 71, "y": 34, "w": 9, "h": 18},
+    {"type": "button", "map": "BACK", "label": "VIEW", "color": "dark", "x": 20, "y": 80, "w": 9, "h": 18},
+    {"type": "button", "map": "START", "label": "MENU", "color": "dark", "x": 71, "y": 80, "w": 9, "h": 18}
+  ]
+}

@@ -55,6 +55,10 @@ def test_layout_is_valid(layout_id):
             assert c["axis"] in AXES, where
         if c["type"] == "stick":
             assert c["axes"] in (["lx", "ly"], ["rx", "ry"]), where
+        if c["type"] == "nudge":
+            assert c["axis"] in AXES and c["dir"] in (-1, 1), where
+        if c["type"] == "wheel":
+            assert 90 <= c["lock"] <= 1440, where
 
 
 @pytest.mark.parametrize("layout_id", IDS)

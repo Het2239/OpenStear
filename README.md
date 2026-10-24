@@ -58,6 +58,8 @@ screen). The choice is remembered.
 | Classic wheel | tilt | Brake and gas pedals, A/B/X/Y |
 | F1 wheel | tilt | Gear paddles, pedals, DRS, radio, pit, ERS, overtake, MFD pad, OK, camera, menu |
 | F1 simple | tilt | Big gear paddles, pedals, DRS, OK, pit, radio, MFD pad, menu |
+| Touch wheel | on-screen wheel | Turn a 900° wheel with your thumb (springs back), paddles, pedals, A/B/X/Y |
+| Arcade | ◀ / ▶ buttons | Hold to steer (ramps to full lock in 0.25 s), big pedals, A/B/X/Y |
 | Xbox style | touch | Two sticks, D-pad, A/B/X/Y, LB/RB, analog LT/RT, stick clicks, View/Home/Menu |
 | PlayStation style | touch | The same with PlayStation labels (✕ ○ □ △, L1/R1, L2/R2, Share/Options) |
 
@@ -79,7 +81,23 @@ Xbox controls, so they work without rebinding:
 F1 24 swaps radio (RB) and overtake (LB). If your game uses other bindings,
 change them in its control settings or edit the layout file.
 
-Layouts are JSON files in `web/layouts/` (positions in percent of the screen).
+### Your own layouts
+
+In the layout menu (☰):
+
+- **Customise (copy)** / **Edit layout** opens the editor: drag a control to
+  move it, drag its blue corner to resize, tap it to change what it sends,
+  its label, colour or shape. **＋ Add** puts in buttons, pedals, sticks, a
+  D-pad, a steering wheel (180–1080°) or ◀/▶ steer buttons. Overlapping
+  controls are outlined in red. ⇅ moves the toolbar to the other edge.
+- **Export** saves the layout as a `.opensteer.json` file to share;
+  **Import…** loads one (it is checked and cleaned up first).
+- **☆** adds a layout to quick switch: with two or more starred, a **⇄**
+  button in the top bar flips between them mid-game (e.g. on foot / car).
+
+Custom layouts are stored on the phone.
+
+Built-in layouts are JSON files in `web/layouts/` (positions in percent of the screen).
 To preview one in a desktop browser, open
 `http://localhost:8765/#preview&layout=f1`.
 
