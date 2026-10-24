@@ -3,6 +3,7 @@ name: test
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   test:
@@ -24,8 +25,11 @@ jobs:
         run: python .github/scripts/annotate_failures.py junit.xml
 
   # Installs the real ViGEmBus driver and checks that a virtual pad driven by
-  # host/gamepad.py shows up in XInput with the right values.
+  # host/gamepad.py shows up in XInput with the right values. Manual only:
+  # the driver install hangs on GitHub-hosted runners (no one to accept the
+  # driver prompt). Run tests/test_vigem_real.py on a real Windows PC instead.
   vigem:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: windows-latest
     timeout-minutes: 15
     steps:

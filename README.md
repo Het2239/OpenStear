@@ -75,8 +75,14 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-CI runs the tests on Linux and Windows, and on Windows also installs the
-real ViGEmBus driver and reads the virtual pad back through XInput.
+CI runs the tests on Linux and Windows. To check the real virtual pad on a
+Windows PC with ViGEmBus installed (it drives a pad and reads it back through
+XInput):
+
+```
+set OPENSTEER_VIGEM_TEST=1
+pytest -v tests/test_vigem_real.py
+```
 
 ## License
 
