@@ -86,3 +86,21 @@ async def test_server_spreads_bunched_presses(aiohttp_client):
     presses = [b for _, b in pads[0].history if "A" in b]
     assert len(presses) == 3, pads[0].history
     await ws.close()
+
+
+def test_audit_logs_lost_taps_and_cancels(caplog):
+    audit = server.TapAudit()
+    audit.phone(10, 0, 0.0)                       # baseline from the first packet
+    audit.pad(frozenset({"A"}), "p")
+    audit.pad(frozenset(), "p")
+    audit.phone(13, 2, 0.1)                       # phone saw 3 taps, 2 cancels
+    audit.pad(frozenset({"B"}), "p")              # 2 presses (A, B) for 3 taps
+    audit.check("p", 0.2)                         # not settled yet: no verdict
+    assert not caplog.records
+    audit.check("p", 1.0)
+    text = caplog.text
+    assert "1 tap(s) registered on the phone did not reach the pad" in text
+    assert "cancelled 2 touch(es)" in text
+    caplog.clear()
+    audit.check("p", 2.0)                         # already reported
+    assert not caplog.records

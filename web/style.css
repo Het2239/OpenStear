@@ -196,6 +196,7 @@ button { font: inherit; color: inherit; }
   overflow: hidden;
 }
 .status .ping { margin-left: auto; font-variant-numeric: tabular-nums; }
+.status .debug { color: var(--accent); font-variant-numeric: tabular-nums; }
 .dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--brake); }
 .dot.on { background: var(--gas); }
 .chip {

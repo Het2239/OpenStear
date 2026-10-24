@@ -17,6 +17,7 @@ SCHEMA = {
     "smoothing": {"min": 0.0, "max": 0.95, "default": 0.5},
     "rate": {"options": [60, 100, 125, 250], "default": 100},
     "haptics": {"bool": True, "default": True},
+    "debug": {"bool": True, "default": False},
 }
 MAX_PHONES = 32
 

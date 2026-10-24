@@ -30,6 +30,11 @@ export const SETTINGS = {
     label: "Vibrate on press", bool: true, default: true,
     format: (v) => (v ? "on" : "off"), help: "Android only.",
   },
+  debug: {
+    label: "Show input debug", bool: true, default: false,
+    format: (v) => (v ? "on" : "off"),
+    help: "Shows taps and cancelled touches in the top bar; the PC logs missed presses.",
+  },
 };
 
 const KEY = "os.settings";

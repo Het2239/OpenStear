@@ -1,5 +1,5 @@
 import { Tilt } from "./sensors.js";
-import { AXES, create, prefs } from "./controls.js";
+import { AXES, create, prefs, stats } from "./controls.js";
 import { buildSheet, defaults, loadLocal, saveLocal } from "./settings.js";
 import { ButtonLatch } from "./buttons.js";
 
@@ -123,6 +123,7 @@ function applySettings() {
     range: v.range, deadzone: v.deadzone, gamma: v.gamma, smoothing: v.smoothing,
   });
   prefs.haptics = v.haptics;
+  prefs.debug = v.debug;
   if (sendTimer !== null) startSending();
 }
 
@@ -224,7 +225,8 @@ function tick() {
   }
   state = next;
   if (!connected || !ws) return;
-  const body = { btn: state.btn };
+  // tp/tc let the PC check that every tap the phone saw became a press.
+  const body = { btn: state.btn, tp: stats.taps, tc: stats.cancels };
   for (const a of AXES) body[a] = +state[a].toFixed(4);
   const key = JSON.stringify(body);
   // On a slow link, drop repeats but never a change (e.g. a button press).

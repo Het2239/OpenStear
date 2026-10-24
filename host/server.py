@@ -74,6 +74,7 @@ class Session:
         self.latch = ButtonLatch()
         self.state = NEUTRAL
         self._timer = None
+        self.audit = TapAudit()
 
     def apply(self, packet):
         seq = packet.get("seq")
@@ -84,7 +85,8 @@ class Session:
         # perf_counter: monotonic() only ticks every ~16 ms on Windows.
         now = time.perf_counter()
         self.state = map_state(packet)
-        self.pad.apply(replace(self.state, buttons=self.latch.update(self.state.buttons, now)))
+        self._show(self.latch.update(self.state.buttons, now))
+        self.audit.phone(packet.get("tp"), packet.get("tc"), now)
         self.last_rx = time.monotonic()
         self.live = True
         self._schedule()
@@ -100,9 +102,12 @@ class Session:
     def _replay(self):
         self._timer = None
         if self.live and self.pad is not None:
-            buttons = self.latch.output(time.perf_counter())
-            self.pad.apply(replace(self.state, buttons=buttons))
+            self._show(self.latch.output(time.perf_counter()))
             self._schedule()
+
+    def _show(self, buttons):
+        self.audit.pad(buttons, self.client_id)
+        self.pad.apply(replace(self.state, buttons=buttons))
 
     def stop(self):
         """Forget queued button edges (disconnect, failsafe)."""
@@ -113,12 +118,69 @@ class Session:
         self.state = NEUTRAL
 
     def failsafe(self):
+        if self.latch.next_due() is None:
+            self.audit.check(self.client_id, time.perf_counter())
         if self.live and time.monotonic() - self.last_rx > FAILSAFE_S:
             self.stop()
             self.pad.reset()
             self.live = False
             log.info("%s: no input for %d ms, inputs released",
                      self.client_id, FAILSAFE_S * 1000)
+
+
+class TapAudit:
+    """Compare taps the phone registered with presses that reached the pad.
+
+    The phone sends its running tap count (tp) and cancelled-touch count (tc)
+    in every packet. A shortfall means a press was lost between the phone and
+    the virtual pad; cancelled touches mean the phone's browser took touches
+    back. Both are logged so a missed press can be traced.
+    """
+
+    SETTLE_S = 0.3
+
+    def __init__(self):
+        self.taps = self.tap_base = None
+        self.cancels = self.cancel_base = None
+        self.presses = self.press_base = 0
+        self.shown = frozenset()
+        self.changed = 0.0
+
+    def phone(self, tp, tc, now):
+        if not isinstance(tp, int) or isinstance(tp, bool):
+            return
+        if self.taps is None:
+            self.tap_base, self.press_base = tp, self.presses
+        if tp != self.taps:
+            self.changed = now
+        self.taps = tp
+        if isinstance(tc, int) and not isinstance(tc, bool):
+            if self.cancels is None:
+                self.cancel_base = tc
+            self.cancels = tc
+
+    def pad(self, buttons, who):
+        # D-pad rolls make several presses per touch, so only count buttons.
+        new = {b for b in buttons - self.shown if not b.startswith("DPAD_")}
+        self.shown = buttons
+        if new:
+            self.presses += len(new)
+            log.debug("%s: press %s (pad presses %d, phone taps %s)",
+                      who, ",".join(sorted(new)), self.presses - self.press_base,
+                      None if self.taps is None else self.taps - self.tap_base)
+
+    def check(self, who, now):
+        if self.taps is None or now - self.changed < self.SETTLE_S:
+            return
+        missing = (self.taps - self.tap_base) - (self.presses - self.press_base)
+        if missing > 0:
+            log.warning("%s: %d tap(s) registered on the phone did not reach the pad as a press "
+                        "(or two buttons with the same Xbox button were held together)", who, missing)
+        if self.cancels is not None and self.cancels > self.cancel_base:
+            log.warning("%s: the phone's browser cancelled %d touch(es); it treated them as a gesture",
+                        who, self.cancels - self.cancel_base)
+            self.cancel_base = self.cancels
+        self.tap_base, self.press_base = self.taps, self.presses
 
 
 async def _watchdog(session):

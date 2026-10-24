@@ -38,7 +38,7 @@ def test_sanitize_clamps_and_drops():
     v = sanitize({"range": 1000, "deadzone": -1, "gamma": "x", "rate": 77,
                   "haptics": 1, "smoothing": float("nan"), "evil": 1})
     assert v == {"range": 180, "deadzone": 0.0, "gamma": 1.0, "rate": 100,
-                 "haptics": True, "smoothing": 0.5}
+                 "haptics": True, "smoothing": 0.5, "debug": False}
     assert sanitize({"rate": 250, "haptics": False})["rate"] == 250
     assert sanitize(None) == sanitize({})
 

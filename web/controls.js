@@ -24,7 +24,12 @@ const bit = (name) => {
 };
 
 // Set from the settings sheet.
-export const prefs = { haptics: true };
+export const prefs = { haptics: true, debug: false };
+
+// Input diagnostics, sent to the PC and shown when prefs.debug is on.
+// taps: button presses the phone registered; cancels: touches the browser
+// took back (e.g. treated as a gesture).
+export const stats = { taps: 0, cancels: 0 };
 
 function haptic() {
   if (!prefs.haptics) return;
@@ -62,9 +67,11 @@ function track(el, onChange) {
   const pointers = new Set();
   el.addEventListener("pointerdown", (e) => {
     e.preventDefault();
-    el.setPointerCapture(e.pointerId);
+    // Record the press first: setPointerCapture can throw on some mobile
+    // browsers for a quick touch, and that must not lose the press.
     pointers.add(e.pointerId);
     onChange(true, e);
+    try { el.setPointerCapture(e.pointerId); } catch { /* release still arrives via pointerup */ }
   });
   el.addEventListener("pointermove", (e) => {
     if (pointers.has(e.pointerId)) onChange(true, e);
@@ -74,7 +81,10 @@ function track(el, onChange) {
     onChange(pointers.size > 0, e);
   };
   el.addEventListener("pointerup", up);
-  el.addEventListener("pointercancel", up);
+  el.addEventListener("pointercancel", (e) => {
+    if (pointers.has(e.pointerId)) stats.cancels++;
+    up(e);
+  });
   el.addEventListener("lostpointercapture", up);
 }
 
@@ -92,7 +102,10 @@ function button(def, ctx, id) {
   let down = false;
   track(el, (active) => {
     if (active === down) return;
-    if (active) haptic();
+    if (active) {
+      stats.taps++;
+      haptic();
+    }
     down = active;
     el.classList.toggle("pressed", down);
     ctx.hold(id, down ? mask : 0);
@@ -206,6 +219,7 @@ function status(def, ctx) {
   el.innerHTML = `
     <span class="dot"></span><span class="conn">offline</span>
     <span class="ping">– ms</span>
+    <span class="debug" hidden></span>
     <button type="button" class="chip center" hidden>Center</button>
     <button type="button" class="chip gear" aria-label="Settings">⚙</button>
     <button type="button" class="chip menu"></button>`;
@@ -222,6 +236,8 @@ function status(def, ctx) {
     el,
     read() {},
     render({ connected, ping }) {
+      q(".debug").hidden = !prefs.debug;
+      if (prefs.debug) q(".debug").textContent = `taps ${stats.taps} · cancel ${stats.cancels}`;
       q(".dot").classList.toggle("on", connected);
       q(".conn").textContent = connected ? "connected" : "offline";
       q(".ping").textContent = ping == null ? "– ms" : `${ping.toFixed(0)} ms`;
