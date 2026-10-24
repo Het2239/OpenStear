@@ -13,7 +13,7 @@ for (const f of readdirSync(dir).filter((f) => f.endsWith(".json") && f !== "ind
 }
 
 // Hostile or broken input is cleaned up or rejected.
-assert.throws(() => validateLayout({}), /Not an OpenSteer layout/);
+assert.throws(() => validateLayout({}), /Not an OpenStear layout/);
 assert.throws(() => validateLayout({ controls: [{ type: "status", x: 0, y: 0, w: 10, h: 10 }] }), /no usable controls/);
 const v = validateLayout({
   name: "x".repeat(100),

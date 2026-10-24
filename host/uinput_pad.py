@@ -94,7 +94,7 @@ def _clamp16(v):
 class UInputPad:
     """Pad interface (apply/reset/close) backed by a uinput device."""
 
-    def __init__(self, name="OpenSteer virtual pad"):
+    def __init__(self, name="OpenStear virtual pad"):
         self.on_rumble = None
         self._effects = {}       # effect id -> (strong, weak, length ms), magnitudes 0..1
         self._gain = 1.0

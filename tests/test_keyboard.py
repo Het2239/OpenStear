@@ -52,8 +52,8 @@ async def test_keys_from_packets_and_release_on_disconnect(aiohttp_client):
     assert rec.events[-1] == (set(), {"W"})
 
 
-@pytest.mark.skipif(not sys.platform.startswith("linux") or os.environ.get("OPENSTEER_UINPUT_TEST") != "1",
-                    reason="needs Linux + /dev/uinput (set OPENSTEER_UINPUT_TEST=1)")
+@pytest.mark.skipif(not sys.platform.startswith("linux") or os.environ.get("OPENSTEAR_UINPUT_TEST") != "1",
+                    reason="needs Linux + /dev/uinput (set OPENSTEAR_UINPUT_TEST=1)")
 def test_linux_virtual_keyboard_is_created():
     """The keyboard device appears with our keys. (Desktops don't let normal
     users read keyboards back, so this can't check the presses themselves.)
@@ -63,7 +63,7 @@ def test_linux_virtual_keyboard_is_created():
 
     from host.keyboard_out import UInputKeys
 
-    name = f"OpenSteer test keyboard {os.getpid()}"
+    name = f"OpenStear test keyboard {os.getpid()}"
     keys = UInputKeys(name)
     try:
         block = None
@@ -85,8 +85,8 @@ def test_linux_virtual_keyboard_is_created():
         keys.close()
 
 
-@pytest.mark.skipif(sys.platform != "win32" or os.environ.get("OPENSTEER_KEYBOARD_TEST") != "1",
-                    reason="needs Windows desktop (set OPENSTEER_KEYBOARD_TEST=1)")
+@pytest.mark.skipif(sys.platform != "win32" or os.environ.get("OPENSTEAR_KEYBOARD_TEST") != "1",
+                    reason="needs Windows desktop (set OPENSTEAR_KEYBOARD_TEST=1)")
 def test_windows_sendinput_presses_keys():
     from host.keyboard_out import WinKeys
 

@@ -1,8 +1,8 @@
-// Service worker: makes OpenSteer installable and lets the shell open while
+// Service worker: makes OpenStear installable and lets the shell open while
 // the PC is starting up. Network first, so updates from the PC always win;
 // the cache is only a fallback.
 
-const CACHE = "opensteer-v1";
+const CACHE = "openstear-v1";
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => {

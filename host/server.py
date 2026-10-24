@@ -363,7 +363,7 @@ def create_trust_app(ca_path):
         return web.Response(
             body=ca_path.read_bytes(),
             content_type="application/x-x509-ca-cert",
-            headers={"Content-Disposition": 'attachment; filename="OpenSteer-CA.crt"'},
+            headers={"Content-Disposition": 'attachment; filename="OpenStear-CA.crt"'},
         )
 
     def static(name):

@@ -28,12 +28,12 @@ class Window:
         self._choices = []
 
         root = self.root = tk.Tk()
-        root.title("OpenSteer")
+        root.title("OpenStear")
         root.resizable(False, False)
         frame = ttk.Frame(root, padding=16)
         frame.grid(sticky="nsew")
 
-        ttk.Label(frame, text="OpenSteer", font=("TkDefaultFont", 16, "bold")).grid(sticky="w")
+        ttk.Label(frame, text="OpenStear", font=("TkDefaultFont", 16, "bold")).grid(sticky="w")
 
         modes = ttk.Frame(frame)
         modes.grid(sticky="w", pady=(10, 4))

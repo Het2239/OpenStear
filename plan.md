@@ -1,6 +1,6 @@
 # Plan: Open-Source Phone Steering Wheel / PC Controller
 
-> Working name: **OpenWheel** (placeholder, pick your own). Do not use the names, logos, screenshots or artwork of RojX or Tilt Wheel Controller. We are rebuilding the *idea and features*, with our own code and design.
+> Name: **OpenStear**. Do not use the names, logos, screenshots or artwork of RojX or Tilt Wheel Controller. We are rebuilding the *idea and features*, with our own code and design.
 
 ## 1. What we are building
 

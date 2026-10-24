@@ -13,7 +13,7 @@ from .gamepad import make_factory
 from .keyboard_out import make_keyboard
 from .telemetry.listener import TelemetryListener
 
-log = logging.getLogger("opensteer")
+log = logging.getLogger("openstear")
 
 
 def print_qr(url):
@@ -82,7 +82,7 @@ def run_window(host, cfg):
 
 def main():
     cfg = config.load()
-    p = argparse.ArgumentParser(description="OpenSteer PC host")
+    p = argparse.ArgumentParser(description="OpenStear PC host")
     p.add_argument("--mode", choices=list(MODES), default=cfg["mode"],
                    help="usb = USB (ADB), tether = USB tethering, wifi = Wi-Fi")
     p.add_argument("--port", type=int, default=cfg["port"],

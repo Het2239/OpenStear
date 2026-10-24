@@ -134,7 +134,7 @@ def vigem_available():
 UINPUT_HELP = (
     "Cannot open /dev/uinput, so no virtual controller on Linux. Allow it with:\n"
     "  echo 'KERNEL==\"uinput\", SUBSYSTEM==\"misc\", TAG+=\"uaccess\", OPTIONS+=\"static_node=uinput\"' "
-    "| sudo tee /etc/udev/rules.d/60-opensteer-uinput.rules\n"
+    "| sudo tee /etc/udev/rules.d/60-openstear-uinput.rules\n"
     "  sudo modprobe uinput && sudo udevadm control --reload && sudo udevadm trigger\n"
     "then log out and back in. Running with --pad log for now."
 )
@@ -160,6 +160,6 @@ def make_factory(backend="auto"):
     if backend == "uinput":
         from .uinput_pad import UInputPad
         log.info("Using uinput virtual Xbox 360 pads")
-        return lambda name: UInputPad(f"OpenSteer virtual pad ({name})")
+        return lambda name: UInputPad(f"OpenStear virtual pad ({name})")
     log.info("Using log-only pads (no virtual controller)")
     return LogPad

@@ -1,6 +1,6 @@
 """End-to-end check of the real virtual pad: drive it, read it back via XInput.
 
-Needs Windows with the ViGEmBus driver. Enabled with OPENSTEER_VIGEM_TEST=1
+Needs Windows with the ViGEmBus driver. Enabled with OPENSTEAR_VIGEM_TEST=1
 (CI sets it after installing the driver).
 """
 
@@ -12,8 +12,8 @@ import time
 import pytest
 
 pytestmark = pytest.mark.skipif(
-    sys.platform != "win32" or os.environ.get("OPENSTEER_VIGEM_TEST") != "1",
-    reason="needs Windows + ViGEmBus (set OPENSTEER_VIGEM_TEST=1)",
+    sys.platform != "win32" or os.environ.get("OPENSTEAR_VIGEM_TEST") != "1",
+    reason="needs Windows + ViGEmBus (set OPENSTEAR_VIGEM_TEST=1)",
 )
 
 

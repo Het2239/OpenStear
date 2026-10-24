@@ -63,8 +63,8 @@ def ensure_ca(directory):
     directory.mkdir(parents=True, exist_ok=True)
     key = ec.generate_private_key(ec.SECP256R1())
     name = x509.Name([
-        x509.NameAttribute(NameOID.ORGANIZATION_NAME, "OpenSteer"),
-        x509.NameAttribute(NameOID.COMMON_NAME, f"OpenSteer local CA ({socket.gethostname()[:32]})"),
+        x509.NameAttribute(NameOID.ORGANIZATION_NAME, "OpenStear"),
+        x509.NameAttribute(NameOID.COMMON_NAME, f"OpenStear local CA ({socket.gethostname()[:32]})"),
     ])
     constraints = x509.NameConstraints(
         permitted_subtrees=[x509.IPAddress(ipaddress.ip_network(n)) for n in PRIVATE_NETS]
@@ -123,7 +123,7 @@ def ensure_server_cert(directory, ips):
     san = [x509.DNSName("localhost")] + [x509.IPAddress(ipaddress.ip_address(ip)) for ip in ips]
     cert = (
         x509.CertificateBuilder()
-        .subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "OpenSteer host")]))
+        .subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "OpenStear host")]))
         .issuer_name(ca_cert.subject)
         .public_key(key.public_key())
         .serial_number(x509.random_serial_number())

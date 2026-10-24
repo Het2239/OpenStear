@@ -100,7 +100,7 @@ class WinKeys:
 # --- Linux ---------------------------------------------------------------------
 
 class UInputKeys:
-    def __init__(self, name="OpenSteer virtual keyboard"):
+    def __init__(self, name="OpenStear virtual keyboard"):
         import fcntl
 
         from . import uinput_pad as u

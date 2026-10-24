@@ -39,7 +39,7 @@ async def settle():
 async def test_serves_web_app(client):
     resp = await client.get("/")
     assert resp.status == 200
-    assert "OpenSteer" in await resp.text()
+    assert "OpenStear" in await resp.text()
     assert (await client.get("/app.js")).status == 200
 
 

@@ -60,7 +60,7 @@ function cleanControl(c) {
 // Returns a cleaned copy of `layout`, or throws an Error saying what's wrong.
 export function validateLayout(layout) {
   if (!layout || typeof layout !== "object" || !Array.isArray(layout.controls)) {
-    throw new Error("Not an OpenSteer layout file.");
+    throw new Error("Not an OpenStear layout file.");
   }
   const controls = layout.controls.slice(0, MAX_CONTROLS).map(cleanControl).filter(Boolean);
   if (!controls.some((c) => c.type !== "status" && c.type !== "panel" && c.type !== "dash")) {
@@ -106,10 +106,10 @@ export function saveCustom(list) {
 
 export function exportLayout(layout) {
   const { custom, ...plain } = layout;
-  const blob = new Blob([JSON.stringify({ opensteer: 1, ...plain }, null, 2)], { type: "application/json" });
+  const blob = new Blob([JSON.stringify({ openstear: 1, ...plain }, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `${layout.name.replace(/[^\w.-]+/g, "_") || "layout"}.opensteer.json`;
+  a.download = `${layout.name.replace(/[^\w.-]+/g, "_") || "layout"}.openstear.json`;
   document.body.append(a);
   a.click();
   a.remove();

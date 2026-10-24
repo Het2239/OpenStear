@@ -9,12 +9,24 @@ from pathlib import Path
 DEFAULTS = {"port": 8765, "token": None, "pad": "auto", "mode": "usb", "telemetry_port": 20777}
 
 
-def config_path():
+def config_dir():
     if sys.platform == "win32":
         base = Path(os.environ.get("APPDATA", Path.home()))
     else:
         base = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
-    return base / "OpenSteer" / "config.json"
+    new, old = base / "OpenStear", base / "OpenSteer"
+    # The app used to be called OpenSteer: keep its token, certificates and
+    # profiles so paired phones keep working.
+    if not new.exists() and old.is_dir():
+        try:
+            old.rename(new)
+        except OSError:
+            return old
+    return new
+
+
+def config_path():
+    return config_dir() / "config.json"
 
 
 def cert_dir():

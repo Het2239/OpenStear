@@ -1,6 +1,6 @@
 {
-  "name": "OpenSteer",
-  "short_name": "OpenSteer",
+  "name": "OpenStear",
+  "short_name": "OpenStear",
   "description": "Phone steering wheel and controller for your PC",
   "start_url": "./",
   "scope": "./",

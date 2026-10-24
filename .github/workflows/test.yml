@@ -63,6 +63,6 @@ jobs:
         timeout-minutes: 5
       - run: python -m pytest -v tests/test_vigem_real.py tests/test_gamepad.py --junitxml=junit.xml
         env:
-          OPENSTEER_VIGEM_TEST: "1"
+          OPENSTEAR_VIGEM_TEST: "1"
       - if: failure()
         run: python .github/scripts/annotate_failures.py junit.xml
