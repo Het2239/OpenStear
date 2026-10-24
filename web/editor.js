@@ -23,6 +23,7 @@ export const ADDABLE = {
   "Steer button ◀": { type: "nudge", axis: "lx", dir: -1, label: "◀", x: 10, y: 50, w: 15, h: 40 },
   "Steer button ▶": { type: "nudge", axis: "lx", dir: 1, label: "▶", x: 26, y: 50, w: 15, h: 40 },
   "Steering meter": { type: "dash", x: 30, y: 12, w: 40, h: 14 },
+  "F1 dashboard": { type: "f1dash", x: 25, y: 12, w: 50, h: 60 },
   "Background panel": { type: "panel", style: "wheel", x: 20, y: 0, w: 60, h: 100 },
 };
 

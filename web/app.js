@@ -49,6 +49,8 @@ let settings = loadLocal();   // {values, ts}
 let sendTimer = null;
 let lastTick = performance.now();
 let pushTimer = null;
+let tele = null;            // latest game telemetry from the PC
+const SHIFT_BUZZ_FROM = 85; // rev-light % where the shift buzz starts
 const latch = new ButtonLatch();
 // Keys get their own latch; each key in use gets a bit, keyNames[bit] = name.
 const keyLatch = new ButtonLatch();
@@ -344,9 +346,14 @@ function connect() {
       applyProfile(msg);
     } else if (msg.t === "profileSaved") {
       toast(msg.name ? `Saved on the PC as "${msg.name}"` : msg.error);
+    } else if (msg.t === "tele") {
+      tele = msg;
+      const rev = msg.off || !settings.values.shiftBuzz ? 0 : (msg.rev || 0);
+      rumble.setRev(rev >= SHIFT_BUZZ_FROM ? (rev - SHIFT_BUZZ_FROM) / (100 - SHIFT_BUZZ_FROM) : 0);
+      prefs.rumbling = rumble.level > 0 || rumble.rev > 0;
     } else if (msg.t === "rumble") {
       rumble.set(Number(msg.l) || 0, Number(msg.s) || 0);
-      prefs.rumbling = rumble.level > 0;
+      prefs.rumbling = rumble.level > 0 || rumble.rev > 0;
     } else if (msg.t === "pong" && typeof msg.ts === "number") {
       pingMs = performance.now() - msg.ts;
     } else if (msg.t === "error") {
@@ -404,7 +411,7 @@ function tick() {
 // --- Render ------------------------------------------------------------------
 
 function render() {
-  const info = { connected, ping: pingMs, state };
+  const info = { connected, ping: pingMs, state, tele };
   for (const c of controls) c.render?.(info);
   if (!$("settings").hidden) {
     $("settings-needle").style.left = `${50 + tilt.value * 50}%`;

@@ -16,7 +16,8 @@ import psutil
 from aiohttp import web
 
 from . import adb, certs, network
-from .server import create_app, create_trust_app, notify_profiles
+from .server import broadcast, create_app, create_trust_app, notify_profiles
+from .telemetry.listener import TelemetryListener
 
 log = logging.getLogger(__name__)
 
@@ -24,6 +25,7 @@ USB, TETHER, WIFI = "usb", "tether", "wifi"
 MODES = {USB: "USB (ADB)", TETHER: "USB tethering", WIFI: "Wi-Fi"}
 NET_POLL_S = 3.0
 GAME_POLL_S = 3.0
+TELE_SEND_S = 0.05   # 20 Hz to the phones
 
 HINTS = {
     USB: "Android: enable USB debugging, plug the phone in, accept the prompt, "
@@ -36,7 +38,7 @@ HINTS = {
 
 class Host:
     def __init__(self, port, token, pad_factory, cert_dir, mode=USB, use_adb=True,
-                 settings_path=None, keyboard=None, profiles_path=None):
+                 settings_path=None, keyboard=None, profiles_path=None, telemetry=None):
         self.port = port
         self.token = token
         self.cert_dir = cert_dir
@@ -48,6 +50,7 @@ class Host:
         self.error = None
         self.app = create_app(token, pad_factory, settings_path, keyboard, profiles_path)
         self.profiles = self.app["profiles"]
+        self.telemetry = telemetry   # TelemetryListener or None
         self._runner = web.AppRunner(self.app, access_log=None)
         self._https_site = None
         self._trust_runner = None
@@ -66,11 +69,16 @@ class Host:
                 adb.keep_reversed(self.port, status=self.adb_status)))
         self._tasks.append(asyncio.create_task(self._watch_network()))
         self._tasks.append(asyncio.create_task(self._watch_games()))
+        if self.telemetry is not None:
+            await self.telemetry.start()
+            self._tasks.append(asyncio.create_task(self._send_telemetry()))
         await self.set_mode(self.mode)
 
     async def stop(self):
         for t in self._tasks:
             t.cancel()
+        if self.telemetry is not None:
+            self.telemetry.stop()
         await self._stop_lan()
         await self._runner.cleanup()
 
@@ -138,6 +146,18 @@ class Host:
                     await self._refresh_cert()
             except Exception:
                 log.exception("Network refresh failed")
+
+    # --- telemetry ------------------------------------------------------------
+
+    async def _send_telemetry(self):
+        """Send the dash summary to phones while a game is sending data."""
+        was_live = False
+        while True:
+            await asyncio.sleep(TELE_SEND_S)
+            live = self.telemetry.live
+            if live or was_live:          # one last "off" message when it stops
+                broadcast(self.app, self.telemetry.message())
+            was_live = live
 
     # --- game profiles --------------------------------------------------------
 

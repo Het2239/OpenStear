@@ -15,8 +15,18 @@ export const supported = typeof navigator !== "undefined" && "vibrate" in naviga
 export class Rumble {
   constructor() {
     this.scale = 1;      // "Game rumble" setting, 0 = off
-    this.level = 0;      // 0..1 currently playing
+    this.level = 0;      // game rumble 0..1
+    this.rev = 0;        // shift-light buzz 0..1 (from telemetry RPM)
     this.timer = null;
+  }
+
+  // Near the limiter the phone buzzes, faster as RPM rises. Game rumble wins
+  // when both are active.
+  setRev(level) {
+    const quantised = Math.round(Math.max(0, Math.min(1, level)) * 5) / 5;
+    if (quantised === this.rev) return;
+    this.rev = quantised;
+    this.play();
   }
 
   // strong/weak are the game's motor strengths, 0..1. The phone has one
@@ -31,6 +41,7 @@ export class Rumble {
 
   stop() {
     this.level = 0;
+    this.rev = 0;
     this.play();
   }
 
@@ -38,11 +49,11 @@ export class Rumble {
     clearInterval(this.timer);
     this.timer = null;
     if (!supported) return;
-    if (this.level <= 0) {
+    if (this.level <= 0 && this.rev <= 0) {
       navigator.vibrate(0);
       return;
     }
-    const pattern = rumblePattern(this.level);
+    const pattern = this.level > 0 ? rumblePattern(this.level) : revPattern(this.rev);
     navigator.vibrate(pattern);
     this.timer = setInterval(() => navigator.vibrate(pattern), RENEW_MS);
   }
@@ -55,5 +66,14 @@ export function rumblePattern(level) {
   const off = PERIOD_MS - on;
   const pattern = [];
   for (let t = 0; t < PATTERN_MS; t += PERIOD_MS) pattern.push(on, off);
+  return pattern;
+}
+
+// Short taps whose spacing shrinks as `level` (0..1) rises: 140 ms apart near
+// the start of the shift range, 45 ms at the limiter.
+export function revPattern(level) {
+  const period = Math.round(140 - 95 * level);
+  const pattern = [];
+  for (let t = 0; t < PATTERN_MS; t += period) pattern.push(14, period - 14);
   return pattern;
 }

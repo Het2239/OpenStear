@@ -552,3 +552,76 @@ body.doc {
   z-index: 10;
   pointer-events: none;
 }
+
+/* F1 telemetry dash */
+.f1dash {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto 1fr auto auto;
+  grid-template-areas: "revs revs" "main main" "times times" "bars tyres";
+  gap: 4px 10px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #0b0d10;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+}
+.f1dash .revs { grid-area: revs; display: grid; grid-template-columns: repeat(15, 1fr); gap: 3px; }
+.f1dash .revs i { height: max(6px, min(5cqh, 14px)); border-radius: 3px; background: #1d2229; }
+.f1dash .revs i.on.g { background: #2fbf71; }
+.f1dash .revs i.on.r { background: #e5484d; }
+.f1dash .revs i.on.p { background: #a970ff; }
+.f1dash.limiter .revs i.on { animation: rev-flash .12s steps(1) infinite; }
+@keyframes rev-flash { 50% { background: #1d2229; } }
+.f1dash .main { grid-area: main; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
+.f1dash .gear { font-size: max(28px, min(46cqh, 30cqw)); font-weight: 800; line-height: 1; padding: 0 10px; }
+.f1dash .side { display: flex; flex-direction: column; gap: 2px; font-size: max(13px, min(9cqh, 6cqw)); }
+.f1dash .side.right { align-items: flex-end; }
+.f1dash .side small { color: var(--muted); font-size: 11px; }
+.f1dash .speed { font-weight: 700; font-size: max(16px, min(14cqh, 9cqw)); }
+.f1dash .pos { font-weight: 700; }
+.f1dash .lapno { color: var(--muted); }
+.f1dash .times { grid-area: times; display: flex; justify-content: space-between; font-size: max(12px, min(8cqh, 5cqw)); }
+.f1dash .cur { font-weight: 700; }
+.f1dash .cur.invalid { color: var(--brake); text-decoration: line-through; }
+.f1dash .last { color: var(--muted); }
+.f1dash .bars { grid-area: bars; display: grid; gap: 4px; align-content: center; }
+.f1dash .bar { position: relative; height: 16px; border-radius: 4px; background: #1d2229; overflow: hidden; font-size: 10px; }
+.f1dash .bar i { position: absolute; inset: 0 auto 0 0; width: 0; }
+.f1dash .fuel i { background: #3e8ef7; }
+.f1dash .fuel.short i { background: var(--brake); }
+.f1dash .ers i { background: #f5c542; }
+.f1dash .bar span { position: relative; padding-left: 5px; line-height: 16px; font-weight: 700; color: #fff; text-shadow: 0 0 3px #000; }
+.f1dash .drs { justify-self: start; padding: 1px 8px; border-radius: 4px; border: 1px solid var(--line); color: var(--muted); font-size: 11px; font-weight: 800; }
+.f1dash .drs.allowed { border-color: #2fbf71; color: #2fbf71; }
+.f1dash .drs.open { background: #2fbf71; border-color: #2fbf71; color: #0b0d10; }
+.f1dash .tyres { grid-area: tyres; display: grid; grid-template-columns: 1fr 1fr; gap: 3px; position: relative; }
+.f1dash .t { display: flex; justify-content: space-between; align-items: baseline; padding: 1px 5px; border-radius: 4px; background: #1d2229; font-size: 11px; }
+.f1dash .t.cold b { color: #7aa7ff; }
+.f1dash .t.ok b { color: #2fbf71; }
+.f1dash .t.hot b { color: #e5484d; }
+.f1dash .t small { color: var(--muted); }
+.f1dash .compound { grid-column: 1 / -1; text-align: center; font-size: 10px; color: var(--muted); }
+.f1dash .compound[data-c="S"] { color: #e5484d; }
+.f1dash .compound[data-c="M"] { color: #f5c542; }
+.f1dash .compound[data-c="H"] { color: #e8ecf1; }
+.f1dash .nodata { display: none; }
+.f1dash:not(.live) > :not(.nodata):not(.revs) { opacity: .25; }
+.f1dash:not(.live) .nodata {
+  display: grid;
+  place-items: center;
+  position: absolute;
+  inset: 0;
+  padding: 10px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  background: rgba(11, 13, 16, .7);
+}
+/* Small dash (e.g. on the F1 wheel): rev lights, gear, speed, lap time only. */
+@container (max-height: 120px) {
+  .f1dash { grid-template-areas: "revs revs" "main main" "times times"; grid-template-rows: auto 1fr auto; }
+  .f1dash .bars, .f1dash .tyres, .f1dash .last, .f1dash .lapno, .f1dash .side small { display: none; }
+  .f1dash .nodata { font-size: 10px !important; padding: 2px !important; }
+}

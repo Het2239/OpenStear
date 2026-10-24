@@ -1,0 +1,19 @@
+{
+  "id": "f1-dash",
+  "name": "F1 dash",
+  "group": "Racing",
+  "tilt": true,
+  "notes": "Live dash from F1 23/24/25 telemetry (turn on UDP telemetry in the game). Buttons use F1 25's default Xbox controls.",
+  "controls": [
+    {"type": "button", "shape": "rect", "map": "X", "label": "−", "sub": "GEAR", "color": "paddle", "x": 0, "y": 0, "w": 16, "h": 30},
+    {"type": "button", "shape": "rect", "map": "A", "label": "+", "sub": "GEAR", "color": "paddle", "x": 84, "y": 0, "w": 16, "h": 30},
+    {"type": "pedal", "axis": "lt", "label": "BRAKE", "color": "red", "x": 0, "y": 33, "w": 16, "h": 67},
+    {"type": "pedal", "axis": "rt", "label": "GAS", "color": "green", "x": 84, "y": 33, "w": 16, "h": 67},
+    {"type": "status", "x": 18, "y": 0, "w": 64, "h": 11},
+    {"type": "f1dash", "x": 18, "y": 12, "w": 64, "h": 64},
+    {"type": "button", "shape": "rect", "map": "Y", "label": "DRS", "color": "green", "x": 18, "y": 78, "w": 15, "h": 22},
+    {"type": "button", "shape": "rect", "map": "B", "label": "OT", "color": "purple", "x": 34, "y": 78, "w": 15, "h": 22},
+    {"type": "button", "shape": "rect", "map": "LB", "label": "RADIO", "color": "blue", "x": 51, "y": 78, "w": 15, "h": 22},
+    {"type": "button", "shape": "rect", "map": "START", "label": "MENU", "color": "dark", "x": 67, "y": 78, "w": 15, "h": 22}
+  ]
+}

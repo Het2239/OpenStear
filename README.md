@@ -59,6 +59,7 @@ screen). The choice is remembered.
 | F1 wheel | tilt | Gear paddles, pedals, DRS, radio, pit, ERS, overtake, MFD pad, OK, camera, menu |
 | F1 simple | tilt | Big gear paddles, pedals, DRS, OK, pit, radio, MFD pad, menu |
 | Touch wheel | on-screen wheel | Turn a 900° wheel with your thumb (springs back), paddles, pedals, A/B/X/Y |
+| F1 dash | tilt | Big live F1 telemetry dash, paddles, pedals, DRS / OT / radio / menu |
 | Arcade | ◀ / ▶ buttons | Hold to steer (ramps to full lock in 0.25 s), big pedals, A/B/X/Y |
 | Xbox style | touch | Two sticks, D-pad, A/B/X/Y, LB/RB, analog LT/RT, stick clicks, View/Home/Menu |
 | PlayStation style | touch | The same with PlayStation labels (✕ ○ □ △, L1/R1, L2/R2, Share/Options) |
@@ -130,6 +131,25 @@ Built-in layouts are JSON files in `web/layouts/` (positions in percent of the s
 To preview one in a desktop browser, open
 `http://localhost:8765/#preview&layout=f1`.
 
+## F1 telemetry dash
+
+With F1 23, F1 24 or F1 25 running on the same PC, the phone shows a live
+dash: shift lights, gear, speed, position and lap, current/last lap time,
+fuel margin, ERS charge and mode, DRS, tyre temperatures, wear and compound.
+Near the limiter the phone buzzes faster as RPM rises (Android; turn off with
+⚙ → Shift-light vibration).
+
+In the game: **Settings → Telemetry Settings → UDP Telemetry On**, IP
+`127.0.0.1`, port **20777**, format 2023/2024/2025. Then pick the **F1 dash**
+layout (the F1 wheel layout shows a small version).
+
+- Game on a console or another PC: send to this PC's IP and start the host
+  with `--telemetry-lan`.
+- Another app (e.g. SimHub) needs the data too: `--telemetry-forward
+  127.0.0.1:20778` passes every packet on.
+- Different port: `--telemetry-port N`. No telemetry: `--no-telemetry`.
+- No game handy: `python -m host.telemetry.sim` sends fake F1 25 data.
+
 ## Rumble
 
 When a game rumbles the controller (kerbs, crashes, gear shifts), the phone
@@ -152,6 +172,7 @@ preview:
 | Send rate | 100 Hz | 60 / 100 / 125 / 250 Hz. A wired Xbox pad reports at ~125 Hz |
 | Vibrate on press | on | Android only |
 | Game rumble | 100% | Strength of game rumble on the phone (0 = off). Android only |
+| Shift-light vibration | on | Buzz near the rev limiter with F1 telemetry. Android only |
 | Show input debug | off | Tap / cancelled-touch counters; the PC logs missed presses |
 
 Settings are saved on the phone and on the PC (`phones.json` next to

@@ -300,11 +300,15 @@ def profile_message(app):
             "layout": profiles.layout(active) if active else None}
 
 
-def notify_profiles(app):
-    """Send the current profile state to every connected phone."""
-    msg = profile_message(app)
+def broadcast(app, msg):
+    """Send `msg` to every connected phone."""
     for session in list(app["sessions"]):
         asyncio.ensure_future(session._send(msg))
+
+
+def notify_profiles(app):
+    """Send the current profile state to every connected phone."""
+    broadcast(app, profile_message(app))
 
 
 async def index(request):

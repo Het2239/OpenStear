@@ -173,6 +173,8 @@ class Window:
             for serial, state in devices.items():
                 text = {"ready": "ready", "unauthorized": "accept the USB debugging prompt on the phone"}
                 lines.append(f"USB {serial}: {text.get(state, state)}")
+        if host.telemetry is not None:
+            lines.append(host.telemetry.status())
         self.status.configure(text="\n".join(lines))
         self._render_profiles()
 

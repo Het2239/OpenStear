@@ -35,6 +35,11 @@ export const SETTINGS = {
     format: (v) => (v === 0 ? "off" : `${Math.round(v * 100)}%`),
     help: "Vibrates when the game rumbles the controller. Android only.",
   },
+  shiftBuzz: {
+    label: "Shift-light vibration", bool: true, default: true,
+    format: (v) => (v ? "on" : "off"),
+    help: "With F1 telemetry: buzzes faster as RPM nears the limiter. Android only.",
+  },
   debug: {
     label: "Show input debug", bool: true, default: false,
     format: (v) => (v ? "on" : "off"),

@@ -6,7 +6,7 @@ import secrets
 import sys
 from pathlib import Path
 
-DEFAULTS = {"port": 8765, "token": None, "pad": "auto", "mode": "usb"}
+DEFAULTS = {"port": 8765, "token": None, "pad": "auto", "mode": "usb", "telemetry_port": 20777}
 
 
 def config_path():

@@ -409,6 +409,89 @@ function dash(def) {
   };
 }
 
+// F1 dashboard from game telemetry (host/telemetry). Shrinks to rev lights,
+// gear, speed and lap time when small.
+const REV_LEDS = 15;
+const ERS_MODES = ["NONE", "MED", "HOTLAP", "OVERTAKE"];
+
+export function lapTime(ms) {
+  if (!ms) return "–:––.–––";
+  const m = Math.floor(ms / 60000);
+  const sec = ((ms % 60000) / 1000).toFixed(3).padStart(6, "0");
+  return `${m}:${sec}`;
+}
+
+function tyreClass(temp) {
+  if (temp < 80) return "cold";
+  if (temp > 105) return "hot";
+  return "ok";
+}
+
+function f1dash(def) {
+  const el = box(def, "f1dash");
+  const leds = Array.from({ length: REV_LEDS }, (_, i) =>
+    `<i class="${i < 5 ? "g" : i < 10 ? "r" : "p"}"></i>`).join("");
+  el.innerHTML = `
+    <div class="revs">${leds}</div>
+    <div class="main">
+      <div class="side left"><span class="pos">P–</span><span class="lapno">L–</span></div>
+      <div class="gear">N</div>
+      <div class="side right"><span class="speed">0</span><small>km/h</small></div>
+    </div>
+    <div class="times"><span class="cur">–:––.–––</span><span class="last">last –:––.–––</span></div>
+    <div class="bars">
+      <div class="bar fuel"><i></i><span>FUEL</span></div>
+      <div class="bar ers"><i></i><span>ERS</span></div>
+      <span class="drs">DRS</span>
+    </div>
+    <div class="tyres">
+      <div class="t fl"><b></b><small></small></div><div class="t fr"><b></b><small></small></div>
+      <div class="t rl"><b></b><small></small></div><div class="t rr"><b></b><small></small></div>
+      <span class="compound"></span>
+    </div>
+    <div class="nodata">No telemetry yet. In F1: Settings → Telemetry Settings →
+      UDP Telemetry On, port 20777.</div>`;
+  const q = (sel) => el.querySelector(sel);
+  const ledEls = [...el.querySelectorAll(".revs i")];
+  const tyreEls = ["fl", "fr", "rl", "rr"].map((k) => q(`.t.${k}`));
+  let shown = null;
+  return {
+    el,
+    read() {},
+    render({ tele }) {
+      const live = !!tele && !tele.off;
+      el.classList.toggle("live", live);
+      if (!live || tele === shown) return;
+      shown = tele;
+      const lit = Math.round(((tele.rev || 0) / 100) * REV_LEDS);
+      ledEls.forEach((led, i) => led.classList.toggle("on", i < lit));
+      el.classList.toggle("limiter", (tele.rev || 0) >= 98);
+      q(".gear").textContent = tele.gear === -1 ? "R" : tele.gear ? String(tele.gear) : "N";
+      q(".speed").textContent = tele.speed ?? 0;
+      q(".pos").textContent = `P${tele.pos ?? "–"}`;
+      q(".lapno").textContent = tele.totalLaps ? `L${tele.lap ?? "–"}/${tele.totalLaps}` : `L${tele.lap ?? "–"}`;
+      q(".cur").textContent = lapTime(tele.curLap);
+      q(".cur").classList.toggle("invalid", !!tele.invalid);
+      q(".last").textContent = `last ${lapTime(tele.lastLap)}`;
+      const fuel = tele.fuelLaps ?? 0;
+      q(".fuel i").style.width = `${clamp(50 + fuel * 10, 0, 100)}%`;
+      q(".fuel span").textContent = `FUEL ${fuel >= 0 ? "+" : ""}${fuel.toFixed(1)}`;
+      q(".fuel").classList.toggle("short", fuel < 0);
+      q(".ers i").style.width = `${(tele.ers ?? 0) * 100}%`;
+      q(".ers span").textContent = `ERS ${Math.round((tele.ers ?? 0) * 100)}% ${ERS_MODES[tele.ersMode] || ""}`;
+      q(".drs").className = `drs${tele.drs ? " open" : tele.drsAllowed ? " allowed" : ""}`;
+      tyreEls.forEach((t, i) => {
+        const temp = tele.tyreTemp?.[i];
+        t.className = `t ${["fl", "fr", "rl", "rr"][i]} ${temp == null ? "" : tyreClass(temp)}`;
+        t.querySelector("b").textContent = temp == null ? "–" : `${temp}°`;
+        t.querySelector("small").textContent = tele.tyreWear ? `${Math.round(tele.tyreWear[i])}%` : "";
+      });
+      q(".compound").textContent = tele.compound ? `${tele.compound} · ${tele.tyreAge ?? 0}L` : "";
+      q(".compound").dataset.c = tele.compound || "";
+    },
+  };
+}
+
 // Decorative background, e.g. the face of a wheel.
 function panel(def) {
   const el = box(def, `panel${def.style ? ` ${def.style}` : ""}`);
@@ -416,7 +499,7 @@ function panel(def) {
   return { el, read() {} };
 }
 
-export const TYPES = { button, pedal, stick, dpad, wheel, nudge, status, dash, panel };
+export const TYPES = { button, pedal, stick, dpad, wheel, nudge, status, dash, f1dash, panel };
 
 export function create(def, ctx, id) {
   const make = TYPES[def.type];
