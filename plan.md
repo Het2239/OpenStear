@@ -188,10 +188,10 @@ Do steps 3–7 on the phone so the dash shows exactly what is sent. The host onl
 **Done when:** an iPhone steers over Wi-Fi and over Personal Hotspot USB.
 
 ### Phase 3: Tuning and settings
-- [ ] Settings screen on phone: sensitivity, range, dead zone, curve, smoothing
-- [ ] Calibrate/center button
-- [ ] Settings saved on phone (localStorage) and on host (JSON)
-- [ ] Wake Lock, fullscreen, PWA install (add to Home Screen)
+- [x] Settings screen on phone: range, dead zone, curve, smoothing, send rate (60/100/125/250 Hz), vibration
+- [x] Calibrate/center button
+- [x] Settings saved on phone (localStorage) and on host (JSON)
+- [x] Wake Lock, fullscreen, PWA install (add to Home Screen)
 
 ### Phase 4: Layouts
 - [x] Layout format as JSON: list of controls with type, position, size, mapping

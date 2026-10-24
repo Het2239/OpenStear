@@ -10,6 +10,7 @@ from pathlib import Path
 from aiohttp import WSMsgType, web
 
 from .mapper import map_state
+from .phone_settings import SettingsStore
 
 log = logging.getLogger(__name__)
 
@@ -125,6 +126,8 @@ async def ws_handler(request):
                     session.apply(packet)
             elif kind == "ping":
                 await ws.send_json({"t": "pong", "id": packet.get("id"), "ts": packet.get("ts")})
+            elif kind == "settings" and session.client_id is not None:
+                app["settings"].put(session.client_id, packet.get("values"), packet.get("ts"))
             elif kind == "hello" and session.pad is None:
                 client_id = str(packet.get("id") or request.remote)[:64]
                 pad, previous = pads.claim(client_id, session)
@@ -136,7 +139,8 @@ async def ws_handler(request):
                     await previous.ws.close()
                 session.pad, session.client_id = pad, client_id
                 log.info("%s: hello (layout %s)", client_id, packet.get("layout"))
-                await ws.send_json({"t": "welcome"})
+                # Saved settings let a phone get its tuning back in a new browser.
+                await ws.send_json({"t": "welcome", "settings": app["settings"].get(client_id)})
     finally:
         watchdog.cancel()
         if session.client_id is not None:
@@ -161,10 +165,11 @@ async def no_cache(request, handler):
     return resp
 
 
-def create_app(token, pad_factory):
+def create_app(token, pad_factory, settings_path=None):
     app = web.Application(middlewares=[no_cache])
     app["token"] = token
     app["pads"] = PadManager(pad_factory)
+    app["settings"] = SettingsStore(settings_path)
     app.router.add_get("/", index)
     app.router.add_get("/ws", ws_handler)
     app.router.add_get("/health", health)

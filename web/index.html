@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#111418">
   <title>OpenSteer</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="OpenSteer">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -27,6 +34,25 @@
       </header>
       <div id="menu-list"></div>
       <p id="menu-notes" class="small"></p>
+    </div>
+  </div>
+
+  <div id="settings" hidden>
+    <div class="sheet">
+      <header>
+        <h2>Settings</h2>
+        <button id="settings-close" type="button" class="chip">Done</button>
+      </header>
+      <div class="preview">
+        <div class="meter"><div class="needle" id="settings-needle"></div></div>
+        <span>steer <b id="settings-steer">0.00</b></span>
+        <button id="settings-center" type="button" class="chip">Center</button>
+      </div>
+      <div id="settings-list"></div>
+      <p class="actions-row">
+        <button id="settings-reset" type="button" class="chip">Reset to defaults</button>
+        <span id="settings-saved" class="small"></span>
+      </p>
     </div>
   </div>
 

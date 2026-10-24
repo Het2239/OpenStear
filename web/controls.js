@@ -21,7 +21,11 @@ const bit = (name) => {
   return i < 0 ? 0 : 1 << i;
 };
 
+// Set from the settings sheet.
+export const prefs = { haptics: true };
+
 function haptic() {
+  if (!prefs.haptics) return;
   try { navigator.vibrate?.(8); } catch { /* not supported */ }
 }
 
@@ -197,10 +201,13 @@ function status(def, ctx) {
     <span class="dot"></span><span class="conn">offline</span>
     <span class="ping">– ms</span>
     <button type="button" class="chip center" hidden>Center</button>
+    <button type="button" class="chip gear" aria-label="Settings">⚙</button>
     <button type="button" class="chip menu"></button>`;
   const q = (s) => el.querySelector(s);
-  q(".menu").textContent = `☰ ${ctx.layout.name}`;
+  q(".menu").innerHTML = `☰ <span class="name"></span>`;
+  q(".menu .name").textContent = ctx.layout.name;
   q(".menu").addEventListener("click", ctx.openMenu);
+  q(".gear").addEventListener("click", ctx.openSettings);
   if (ctx.layout.tilt) {
     q(".center").hidden = false;
     q(".center").addEventListener("click", ctx.calibrate);

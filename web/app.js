@@ -1,7 +1,7 @@
 import { Tilt } from "./sensors.js";
-import { AXES, create } from "./controls.js";
+import { AXES, create, prefs } from "./controls.js";
+import { buildSheet, defaults, loadLocal, saveLocal } from "./settings.js";
 
-const SEND_MS = 10;   // ~100 Hz state packets
 const PING_MS = 1000;
 const MAX_BUFFERED = 1024;
 const DEFAULT_LAYOUT = "classic";
@@ -38,6 +38,10 @@ let ws = null;
 let connected = false;
 let pingMs = null;
 let retryMs = 250;
+let settings = loadLocal();   // {values, ts}
+let sendTimer = null;
+let lastTick = performance.now();
+let pushTimer = null;
 
 function zeroState() {
   const s = { btn: 0 };
@@ -58,7 +62,7 @@ function useLayout(id) {
   const pad = $("pad");
   pad.replaceChildren();
   pad.dataset.layout = layout.id;
-  const ctx = { layout, openMenu, calibrate: () => tilt.calibrate() };
+  const ctx = { layout, openMenu, openSettings, calibrate: () => tilt.calibrate() };
   controls = layout.controls.map((def) => create(def, ctx));
   for (const c of controls) pad.append(c.el);
   // Nothing from the old layout may stay pressed.
@@ -100,6 +104,58 @@ async function chooseLayout(id) {
   if (layout.tilt) setTimeout(() => tilt.calibrate(), 150);
 }
 
+// --- Settings ----------------------------------------------------------------
+
+function applySettings() {
+  const v = settings.values;
+  Object.assign(tilt.settings, {
+    range: v.range, deadzone: v.deadzone, gamma: v.gamma, smoothing: v.smoothing,
+  });
+  prefs.haptics = v.haptics;
+  if (sendTimer !== null) startSending();
+}
+
+function setSettings(values, ts = Date.now()) {
+  settings = { values, ts };
+  saveLocal(settings);
+  applySettings();
+}
+
+// Send our settings to the PC shortly after the last change.
+function pushSettings() {
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => send({ t: "settings", values: settings.values, ts: settings.ts }), 300);
+}
+
+// On connect the PC sends what it has saved; the newer copy wins.
+function syncSettings(remote) {
+  if (remote && remote.values && remote.ts > settings.ts) {
+    setSettings({ ...defaults(), ...remote.values }, remote.ts);
+    if (!$("settings").hidden) openSettings();
+  } else if (settings.ts > 0 && (!remote || remote.ts < settings.ts)) {
+    pushSettings();
+  }
+}
+
+function openSettings() {
+  buildSheet($("settings-list"), settings.values, (values) => {
+    setSettings(values);
+    pushSettings();
+    $("settings-saved").textContent = "Saved";
+  });
+  $("settings-saved").textContent = "";
+  $("settings").hidden = false;
+}
+
+$("settings-close").addEventListener("click", () => { $("settings").hidden = true; });
+$("settings-center").addEventListener("click", () => tilt.calibrate());
+$("settings-reset").addEventListener("click", () => {
+  setSettings(defaults());
+  pushSettings();
+  openSettings();
+  $("settings-saved").textContent = "Defaults restored";
+});
+
 // --- Connection --------------------------------------------------------------
 
 function connect() {
@@ -115,6 +171,7 @@ function connect() {
     if (msg.t === "welcome") {
       connected = true;
       retryMs = 250;
+      syncSettings(msg.settings);
     } else if (msg.t === "pong" && typeof msg.ts === "number") {
       pingMs = performance.now() - msg.ts;
     } else if (msg.t === "error") {
@@ -136,8 +193,17 @@ function send(obj) {
   }
 }
 
+function startSending() {
+  clearInterval(sendTimer);
+  sendTimer = setInterval(tick, 1000 / settings.values.rate);
+}
+
 function tick() {
-  const steer = tilt.update();
+  const now = performance.now();
+  // Cap the step so a stalled timer (background tab) can't jump the filter.
+  const dt = Math.min(now - lastTick, 100);
+  lastTick = now;
+  const steer = tilt.update(dt);
   const next = zeroState();
   if (layout.tilt) next.lx = steer;
   for (const c of controls) c.read(next);
@@ -154,6 +220,10 @@ function tick() {
 function render() {
   const info = { connected, ping: pingMs, state };
   for (const c of controls) c.render?.(info);
+  if (!$("settings").hidden) {
+    $("settings-needle").style.left = `${50 + tilt.value * 50}%`;
+    $("settings-steer").textContent = tilt.value.toFixed(2);
+  }
   requestAnimationFrame(render);
 }
 
@@ -214,7 +284,7 @@ $("start").addEventListener("click", async () => {
   // Give the sensor a moment to report before taking the center position.
   setTimeout(() => tilt.calibrate(), 150);
   connect();
-  setInterval(tick, SEND_MS);
+  startSending();
   setInterval(() => send({ t: "ping", id: seq, ts: performance.now() }), PING_MS);
 });
 
@@ -226,10 +296,16 @@ if (typeof window.DeviceMotionEvent?.requestPermission === "function") {
   $("start").textContent = "Enable motion & Start";
 }
 
+// Installable app (Add to Home Screen). Needs a secure page, which we have.
+if ("serviceWorker" in navigator && window.isSecureContext && !preview) {
+  navigator.serviceWorker.register("sw.js").catch(() => { /* optional */ });
+}
+
+applySettings();
 await loadLayouts();
 useLayout(hash.get("layout") || load("os.layout") || DEFAULT_LAYOUT);
 if (preview) {
   $("overlay").classList.add("hidden");
-  setInterval(tick, SEND_MS);
+  startSending();
 }
 requestAnimationFrame(render);

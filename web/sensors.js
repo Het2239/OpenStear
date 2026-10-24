@@ -12,7 +12,7 @@ export const DEFAULTS = {
   range: 90,       // degrees of tilt for full lock
   deadzone: 0.03,  // fraction of full lock treated as center
   gamma: 1.0,      // response curve, >1 is gentler near center
-  smoothing: 0.5,  // EMA factor per 10 ms tick, 1 = no smoothing
+  smoothing: 0.5,  // share of the old value kept per 10 ms, 0 = no smoothing
 };
 
 const DEG = 180 / Math.PI;
@@ -67,16 +67,16 @@ export class Tilt {
     if (this.raw != null) this.center = this.raw;
   }
 
-  // Advance one tick and return the steering value. Call at a fixed rate so
-  // smoothing behaves the same on every phone.
-  update() {
+  // Advance by `dtMs` and return the steering value. Smoothing is scaled by
+  // time, so it feels the same at any send rate.
+  update(dtMs = 10) {
     if (this.raw == null) return this.value;
     const { range, deadzone, gamma, smoothing } = this.settings;
     let v = wrap(this.raw - this.center) / range;
     v = Math.max(-1, Math.min(1, v));
     const mag = Math.abs(v);
     v = mag <= deadzone ? 0 : Math.sign(v) * ((mag - deadzone) / (1 - deadzone)) ** gamma;
-    this.value += smoothing * (v - this.value);
+    this.value += (1 - smoothing ** (dtMs / 10)) * (v - this.value);
     if (Math.abs(this.value) < 1e-4) this.value = 0;
     return this.value;
   }

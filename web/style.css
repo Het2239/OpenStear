@@ -211,21 +211,21 @@ button { font: inherit; color: inherit; }
 
 /* Dash: steering meter and values */
 .dash { display: flex; flex-direction: column; justify-content: center; gap: 6px; }
-.dash .meter {
+.dash .meter, .preview .meter {
   position: relative;
   height: 12px;
   border-radius: 6px;
   background: var(--panel);
   border: 1px solid var(--line);
 }
-.dash .meter::before {
+.dash .meter::before, .preview .meter::before {
   content: "";
   position: absolute;
   left: 50%; top: 2px; bottom: 2px;
   width: 1px;
   background: var(--line);
 }
-.dash .needle {
+.dash .needle, .preview .needle {
   position: absolute;
   top: 1px; bottom: 1px;
   left: 50%;
@@ -258,7 +258,7 @@ button { font: inherit; color: inherit; }
 
 /* --- Overlays ------------------------------------------------------------- */
 
-#overlay, #menu {
+#overlay, #menu, #settings {
   position: fixed;
   inset: 0;
   display: grid;
@@ -315,6 +315,43 @@ button { font: inherit; color: inherit; }
 .choice.current { border-color: var(--accent); }
 .small { font-size: 13px; color: var(--muted); }
 
+/* Settings sheet */
+.preview {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.preview b { color: var(--text); }
+#settings-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 4px 16px; }
+.setting {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.setting .name { font-weight: 600; }
+.setting output { color: var(--accent); font-variant-numeric: tabular-nums; font-size: 13px; }
+.setting small { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+.setting input[type="range"] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); height: 28px; }
+.setting select {
+  grid-column: 1 / -1;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+}
+.setting input[type="checkbox"] { grid-row: 1; grid-column: 2; width: 22px; height: 22px; accent-color: var(--accent); }
+.setting:has(input[type="checkbox"]) output { display: none; }
+.actions-row { display: flex; align-items: center; gap: 12px; }
+
 #rotate {
   position: fixed;
   inset: 0;
@@ -359,3 +396,11 @@ body.doc {
 .guide details { margin: 16px 0; color: var(--muted); }
 .guide summary { color: var(--text); cursor: pointer; }
 .warn { color: var(--brake) !important; }
+.preview .chip { max-width: none; }
+.status .gear { flex: none; max-width: none; }
+
+/* Narrow status bars: keep the dot, Center, ⚙ and ☰; drop the words. */
+@container (max-width: 330px) {
+  .status .conn, .status .menu .name { display: none; }
+  .status .chip { max-width: none; }
+}

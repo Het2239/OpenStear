@@ -33,7 +33,8 @@ HINTS = {
 
 
 class Host:
-    def __init__(self, port, token, pad_factory, cert_dir, mode=USB, use_adb=True):
+    def __init__(self, port, token, pad_factory, cert_dir, mode=USB, use_adb=True,
+                 settings_path=None):
         self.port = port
         self.token = token
         self.cert_dir = cert_dir
@@ -43,7 +44,7 @@ class Host:
         self.ifaces = []
         self.adb_status = {"adb": None, "devices": {}}
         self.error = None
-        self.app = create_app(token, pad_factory)
+        self.app = create_app(token, pad_factory, settings_path)
         self._runner = web.AppRunner(self.app, access_log=None)
         self._https_site = None
         self._trust_runner = None

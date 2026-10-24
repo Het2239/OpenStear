@@ -120,3 +120,21 @@ async def test_reconnect_takes_over_old_session(client, pads):
     await settle()
     assert pads["pad1"].state.rt == 255
     await new.close()
+
+
+async def test_settings_roundtrip(aiohttp_client, tmp_path):
+    app = server.create_app(TOKEN, LogPad, tmp_path / "phones.json")
+    client = await aiohttp_client(app)
+    ws = await client.ws_connect(f"/ws?k={TOKEN}")
+    await ws.send_json({"t": "hello", "id": "p1"})
+    assert await ws.receive_json() == {"t": "welcome", "settings": None}
+    await ws.send_json({"t": "settings", "values": {"range": 60, "rate": 250}, "ts": 5})
+    await settle()
+    await ws.close()
+
+    ws = await client.ws_connect(f"/ws?k={TOKEN}")
+    await ws.send_json({"t": "hello", "id": "p1"})
+    msg = await ws.receive_json()
+    assert msg["settings"]["ts"] == 5
+    assert msg["settings"]["values"]["range"] == 60 and msg["settings"]["values"]["rate"] == 250
+    await ws.close()

@@ -83,6 +83,28 @@ Layouts are JSON files in `web/layouts/` (positions in percent of the screen).
 To preview one in a desktop browser, open
 `http://localhost:8765/#preview&layout=f1`.
 
+## Settings
+
+Tap **⚙** on the phone. Changes apply immediately, with a live steering
+preview:
+
+| Setting | Default | What it does |
+|---|---|---|
+| Steering range | 90° | Tilt needed for full lock (lower = more sensitive) |
+| Dead zone | 3% | Small tilts around center are ignored |
+| Response curve | linear | Above 1 = gentler near center |
+| Smoothing | 50% | Filters sensor jitter (time-based, same feel at any send rate) |
+| Send rate | 100 Hz | 60 / 100 / 125 / 250 Hz. A wired Xbox pad reports at ~125 Hz |
+| Vibrate on press | on | Android only |
+
+Settings are saved on the phone and on the PC (`phones.json` next to
+`config.json`). A new browser, or the installed home-screen app, picks up the
+last saved settings from the PC.
+
+**Install as an app:** Android Chrome menu → *Install app* / *Add to Home
+screen*; iPhone Safari → Share → *Add to Home Screen*. It opens full screen in
+landscape.
+
 Holding the phone: landscape, like a wheel. Tap **Start** (iPhone: **Enable
 motion & Start**) while holding it level; **Center** re-levels it any time.
 

@@ -100,7 +100,8 @@ def main():
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
                         format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
     host = Host(args.port, cfg["token"], make_factory(args.pad), config.cert_dir(),
-                mode=args.mode, use_adb=not args.no_adb)
+                mode=args.mode, use_adb=not args.no_adb,
+                settings_path=config.config_path().parent / "phones.json")
     try:
         if args.no_ui or not run_window(host, cfg):
             asyncio.run(run_console(host))
