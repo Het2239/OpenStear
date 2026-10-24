@@ -24,7 +24,7 @@ const bit = (name) => {
 };
 
 // Set from the settings sheet.
-export const prefs = { haptics: true, debug: false };
+export const prefs = { haptics: true, debug: false, rumbling: false };
 
 // Input diagnostics, sent to the PC and shown when prefs.debug is on.
 // taps: button presses the phone registered; cancels: touches the browser
@@ -32,7 +32,8 @@ export const prefs = { haptics: true, debug: false };
 export const stats = { taps: 0, cancels: 0 };
 
 function haptic() {
-  if (!prefs.haptics) return;
+  // A press buzz would cut off game rumble that is playing.
+  if (!prefs.haptics || prefs.rumbling) return;
   try { navigator.vibrate?.(8); } catch { /* not supported */ }
 }
 

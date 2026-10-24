@@ -83,6 +83,14 @@ Layouts are JSON files in `web/layouts/` (positions in percent of the screen).
 To preview one in a desktop browser, open
 `http://localhost:8765/#preview&layout=f1`.
 
+## Rumble
+
+When a game rumbles the controller (kerbs, crashes, gear shifts), the phone
+vibrates. The phone has one on/off motor, so strength is made by pulsing it:
+light rumble = short buzzes, full rumble = solid. Works on Windows (ViGEmBus)
+and Linux (uinput force feedback). Android only: iPhone browsers have no
+vibration API.
+
 ## Settings
 
 Tap **⚙** on the phone. Changes apply immediately, with a live steering
@@ -96,6 +104,8 @@ preview:
 | Smoothing | 50% | Filters sensor jitter (time-based, same feel at any send rate) |
 | Send rate | 100 Hz | 60 / 100 / 125 / 250 Hz. A wired Xbox pad reports at ~125 Hz |
 | Vibrate on press | on | Android only |
+| Game rumble | 100% | Strength of game rumble on the phone (0 = off). Android only |
+| Show input debug | off | Tap / cancelled-touch counters; the PC logs missed presses |
 
 Settings are saved on the phone and on the PC (`phones.json` next to
 `config.json`). A new browser, or the installed home-screen app, picks up the

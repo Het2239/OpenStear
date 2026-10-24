@@ -82,3 +82,52 @@ def test_virtual_pad_is_seen_by_the_kernel():
         pad.close()
     gone, _ = find_event_node(name, timeout=1.0)
     assert gone is None
+
+
+# struct ff_effect with an FF_RUMBLE payload: type, id, direction,
+# trigger.button, trigger.interval, replay.length, replay.delay, pad,
+# strong, weak, rest of the union.
+_FF_EFFECT = struct.Struct("HhHHHHH2xHH28x")
+EVIOCSFF = (1 << 30) | (48 << 16) | (ord("E") << 8) | 0x80
+EVIOCRMFF = (1 << 30) | (4 << 16) | (ord("E") << 8) | 0x81
+
+
+async def test_rumble_from_a_game_reaches_on_rumble():
+    import asyncio
+
+    from host.uinput_pad import EV_FF, FF_RUMBLE, UInputPad, _EVENT
+
+    name = f"OpenSteer rumble test {os.getpid()}"
+    pad = UInputPad(name)
+    seen = []
+    pad.on_rumble = lambda strong, weak: seen.append((round(strong, 2), round(weak, 2)))
+    try:
+        node, _ = await asyncio.to_thread(find_event_node, name)
+        fd = os.open(node, os.O_RDWR)
+        try:
+            # Upload a rumble effect like a game would (blocks until the pad answers,
+            # so run it off the event loop thread).
+            effect = bytearray(_FF_EFFECT.pack(FF_RUMBLE, -1, 0, 0, 0, 200, 0, 0xC000, 0x4000))
+            await asyncio.to_thread(fcntl.ioctl, fd, EVIOCSFF, effect)
+            eid = struct.unpack_from("h", effect, 2)[0]
+            assert eid >= 0
+
+            os.write(fd, _EVENT.pack(0, 0, EV_FF, eid, 1))      # play
+            await asyncio.sleep(0.05)
+            assert seen[-1] == (0.75, 0.25)
+            await asyncio.sleep(0.3)                            # 200 ms effect ends by itself
+            assert seen[-1] == (0.0, 0.0)
+
+            os.write(fd, _EVENT.pack(0, 0, EV_FF, eid, 1))      # play again, then stop early
+            await asyncio.sleep(0.05)
+            os.write(fd, _EVENT.pack(0, 0, EV_FF, eid, 0))
+            await asyncio.sleep(0.05)
+            assert seen[-1] == (0.0, 0.0) and seen[-2] == (0.75, 0.25)
+
+            await asyncio.to_thread(fcntl.ioctl, fd, EVIOCRMFF, eid)   # erase
+        finally:
+            # Closing makes the kernel ask the pad to erase this fd's effects,
+            # which the pad answers on the event loop: close off the loop.
+            await asyncio.to_thread(os.close, fd)
+    finally:
+        pad.close()

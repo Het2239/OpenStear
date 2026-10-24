@@ -5,6 +5,7 @@
 `LogPad` prints state changes; used when neither is available, or for testing.
 """
 
+import asyncio
 import logging
 import sys
 import time
@@ -15,6 +16,10 @@ log = logging.getLogger(__name__)
 
 
 class Pad:
+    # Set by the server: called with (strong, weak) motor strengths, 0..1,
+    # when a game rumbles this pad. Backends that can't receive rumble never call it.
+    on_rumble = None
+
     def apply(self, state: PadState):
         raise NotImplementedError
 
@@ -50,6 +55,28 @@ class ViGEmPad(Pad):
         }
 
         self._state = NEUTRAL  # VX360Gamepad() starts with a neutral report
+        self._register_rumble()
+
+    def _register_rumble(self):
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return
+
+        # ViGEm calls this on its own thread with motor values 0..255. vgamepad
+        # checks the parameter names, so they must match its dummy_callback.
+        def notify(client, target, large_motor, small_motor, led_number, user_data):
+            loop.call_soon_threadsafe(self._rumble, large_motor / 255, small_motor / 255)
+
+        try:
+            self._pad.register_notification(callback_function=notify)
+            self._notify = notify  # keep a reference alive
+        except Exception as e:
+            log.warning("Rumble from games unavailable: %s", e)
+
+    def _rumble(self, strong, weak):
+        if self.on_rumble is not None and self._pad is not None:
+            self.on_rumble(strong, weak)
 
     def apply(self, state):
         if state == self._state or self._pad is None:

@@ -54,7 +54,9 @@ class PadManager:
     def release(self, client_id, owner):
         if self._owners.get(client_id) is owner:
             del self._owners[client_id]
-            self._pads[client_id].reset()
+            pad = self._pads[client_id]
+            pad.on_rumble = None
+            pad.reset()
 
     def close_all(self):
         for pad in self._pads.values():
@@ -75,6 +77,21 @@ class Session:
         self.state = NEUTRAL
         self._timer = None
         self.audit = TapAudit()
+        self._rumble_sent = (0.0, 0.0)
+
+    def rumble(self, strong, weak):
+        """The game rumbled this phone's pad: tell the phone (on change only)."""
+        value = (round(strong, 2), round(weak, 2))
+        if value == self._rumble_sent or self.ws.closed:
+            return
+        self._rumble_sent = value
+        asyncio.ensure_future(self._send({"t": "rumble", "l": value[0], "s": value[1]}))
+
+    async def _send(self, msg):
+        try:
+            await self.ws.send_json(msg)
+        except (ConnectionError, RuntimeError):
+            pass  # phone went away; it stops vibrating on its own
 
     def apply(self, packet):
         seq = packet.get("seq")
@@ -233,6 +250,7 @@ async def ws_handler(request):
                     previous.pad = None
                     await previous.ws.close()
                 session.pad, session.client_id = pad, client_id
+                pad.on_rumble = session.rumble
                 log.info("%s: hello (layout %s)", client_id, packet.get("layout"))
                 # Saved settings let a phone get its tuning back in a new browser.
                 await ws.send_json({"t": "welcome", "settings": app["settings"].get(client_id)})

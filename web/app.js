@@ -2,6 +2,7 @@ import { Tilt } from "./sensors.js";
 import { AXES, create, prefs, stats } from "./controls.js";
 import { buildSheet, defaults, loadLocal, saveLocal } from "./settings.js";
 import { ButtonLatch } from "./buttons.js";
+import { Rumble } from "./rumble.js";
 
 const PING_MS = 1000;
 // Above this many unsent bytes, skip packets that repeat the last one.
@@ -45,6 +46,7 @@ let sendTimer = null;
 let lastTick = performance.now();
 let pushTimer = null;
 const latch = new ButtonLatch();
+const rumble = new Rumble();
 let latchTimer = null;
 let lastSent = "";
 
@@ -124,6 +126,7 @@ function applySettings() {
   });
   prefs.haptics = v.haptics;
   prefs.debug = v.debug;
+  rumble.scale = v.rumble;
   if (sendTimer !== null) startSending();
 }
 
@@ -184,6 +187,9 @@ function connect() {
       connected = true;
       retryMs = 250;
       syncSettings(msg.settings);
+    } else if (msg.t === "rumble") {
+      rumble.set(Number(msg.l) || 0, Number(msg.s) || 0);
+      prefs.rumbling = rumble.level > 0;
     } else if (msg.t === "pong" && typeof msg.ts === "number") {
       pingMs = performance.now() - msg.ts;
     } else if (msg.t === "error") {
@@ -192,6 +198,7 @@ function connect() {
   };
   ws.onclose = () => {
     connected = false;
+    rumble.stop();
     pingMs = null;
     ws = null;
     setTimeout(connect, retryMs);
@@ -276,7 +283,8 @@ async function keepAwake() {
 
 // The browser drops the wake lock when the page is hidden; take it back.
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden && running()) keepAwake();
+  if (document.hidden) rumble.stop();
+  else if (running()) keepAwake();
 });
 document.addEventListener("contextmenu", (e) => e.preventDefault());
 

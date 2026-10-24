@@ -2,9 +2,16 @@
 
 The device uses the Xbox 360 USB ids and the same event codes as the kernel's
 xpad driver, so browsers, SDL and Steam apply their standard Xbox mapping.
+
+It also accepts rumble (force feedback): games upload FF_RUMBLE effects and
+play them; we answer the kernel's upload/erase requests and report the motor
+strengths through `on_rumble(strong, weak)`, each 0..1.
 """
 
+import asyncio
+import errno
 import fcntl
+import logging
 import os
 import struct
 
@@ -12,8 +19,13 @@ from .mapper import NEUTRAL
 
 UINPUT = "/dev/uinput"
 
-EV_SYN, EV_KEY, EV_ABS = 0x00, 0x01, 0x03
+log = logging.getLogger(__name__)
+
+EV_SYN, EV_KEY, EV_ABS, EV_FF, EV_UINPUT = 0x00, 0x01, 0x03, 0x15, 0x0101
 SYN_REPORT = 0
+UI_FF_UPLOAD, UI_FF_ERASE = 1, 2
+FF_RUMBLE, FF_GAIN = 0x50, 0x60
+FF_EFFECTS_MAX = 16
 BUS_USB = 0x03
 VENDOR, PRODUCT, VERSION = 0x045E, 0x028E, 0x0110
 
@@ -51,6 +63,11 @@ _INT = struct.calcsize("i")
 _SETUP = struct.Struct("4H80sI")             # struct uinput_setup
 _ABS_SETUP = struct.Struct("H2x6i")          # struct uinput_abs_setup
 _EVENT = struct.Struct("llHHi")              # struct input_event (64-bit time)
+# struct uinput_ff_upload: request_id, retval, then struct ff_effect (48 bytes)
+# at offset 8 and the old effect at 56. In ff_effect: type @0, id @2,
+# replay.length @10, and for FF_RUMBLE strong/weak magnitude @16/@18.
+_FF_UPLOAD_SIZE, _FF_EFFECT_OFF = 104, 8
+_FF_ERASE = struct.Struct("IiI")             # struct uinput_ff_erase
 
 UI_DEV_CREATE = _ioc(0, 1, 0)
 UI_DEV_DESTROY = _ioc(0, 2, 0)
@@ -59,6 +76,11 @@ UI_ABS_SETUP = _ioc(1, 4, _ABS_SETUP.size)
 UI_SET_EVBIT = _ioc(1, 100, _INT)
 UI_SET_KEYBIT = _ioc(1, 101, _INT)
 UI_SET_ABSBIT = _ioc(1, 103, _INT)
+UI_SET_FFBIT = _ioc(1, 107, _INT)
+UI_BEGIN_FF_UPLOAD = _ioc(3, 200, _FF_UPLOAD_SIZE)
+UI_END_FF_UPLOAD = _ioc(1, 201, _FF_UPLOAD_SIZE)
+UI_BEGIN_FF_ERASE = _ioc(3, 202, _FF_ERASE.size)
+UI_END_FF_ERASE = _ioc(1, 203, _FF_ERASE.size)
 
 
 def available():
@@ -73,7 +95,14 @@ class UInputPad:
     """Pad interface (apply/reset/close) backed by a uinput device."""
 
     def __init__(self, name="OpenSteer virtual pad"):
-        self._fd = os.open(UINPUT, os.O_WRONLY | os.O_NONBLOCK)
+        self.on_rumble = None
+        self._effects = {}       # effect id -> (strong, weak, length ms), magnitudes 0..1
+        self._gain = 1.0
+        self._playing = None     # effect id currently driving the motors
+        self._stop_timer = None
+        self._loop = None
+        # Read/write: rumble requests from games arrive on this same fd.
+        self._fd = os.open(UINPUT, os.O_RDWR | os.O_NONBLOCK)
         try:
             fcntl.ioctl(self._fd, UI_SET_EVBIT, EV_KEY)
             for code in BUTTON_CODES.values():
@@ -82,13 +111,91 @@ class UInputPad:
             for code, lo, hi in AXES:
                 fcntl.ioctl(self._fd, UI_SET_ABSBIT, code)
                 fcntl.ioctl(self._fd, UI_ABS_SETUP, _ABS_SETUP.pack(code, 0, lo, hi, 0, 0, 0))
+            fcntl.ioctl(self._fd, UI_SET_EVBIT, EV_FF)
+            fcntl.ioctl(self._fd, UI_SET_FFBIT, FF_RUMBLE)
+            fcntl.ioctl(self._fd, UI_SET_FFBIT, FF_GAIN)
             fcntl.ioctl(self._fd, UI_DEV_SETUP, _SETUP.pack(
-                BUS_USB, VENDOR, PRODUCT, VERSION, name.encode()[:79], 0))
+                BUS_USB, VENDOR, PRODUCT, VERSION, name.encode()[:79], FF_EFFECTS_MAX))
             fcntl.ioctl(self._fd, UI_DEV_CREATE)
         except OSError:
             os.close(self._fd)
             raise
         self._state = NEUTRAL
+        try:
+            self._loop = asyncio.get_running_loop()
+            self._loop.add_reader(self._fd, self._read)
+        except RuntimeError:
+            pass  # no event loop (e.g. a quick test): rumble requests go unanswered
+
+    # --- rumble ------------------------------------------------------------
+
+    def _read(self):
+        while self._fd is not None:
+            try:
+                data = os.read(self._fd, _EVENT.size * 32)
+            except OSError as e:
+                if e.errno not in (errno.EAGAIN, errno.EWOULDBLOCK):
+                    log.warning("uinput read failed: %s", e)
+                return
+            for off in range(0, len(data) - _EVENT.size + 1, _EVENT.size):
+                _, _, etype, code, value = _EVENT.unpack_from(data, off)
+                try:
+                    if etype == EV_UINPUT and code == UI_FF_UPLOAD:
+                        self._upload(value)
+                    elif etype == EV_UINPUT and code == UI_FF_ERASE:
+                        self._erase(value)
+                    elif etype == EV_FF:
+                        self._play(code, value)
+                except OSError as e:
+                    log.warning("rumble request failed: %s", e)
+
+    def _upload(self, request_id):
+        buf = bytearray(_FF_UPLOAD_SIZE)
+        struct.pack_into("I", buf, 0, request_id)
+        fcntl.ioctl(self._fd, UI_BEGIN_FF_UPLOAD, buf)
+        etype, eid = struct.unpack_from("Hh", buf, _FF_EFFECT_OFF)
+        length = struct.unpack_from("H", buf, _FF_EFFECT_OFF + 10)[0]
+        if etype == FF_RUMBLE:
+            strong, weak = struct.unpack_from("HH", buf, _FF_EFFECT_OFF + 16)
+            self._effects[eid] = (strong / 0xFFFF, weak / 0xFFFF, length)
+            retval = 0
+        else:
+            retval = -errno.EINVAL
+        struct.pack_into("i", buf, 4, retval)
+        fcntl.ioctl(self._fd, UI_END_FF_UPLOAD, buf)
+
+    def _erase(self, request_id):
+        buf = bytearray(_FF_ERASE.pack(request_id, 0, 0))
+        fcntl.ioctl(self._fd, UI_BEGIN_FF_ERASE, buf)
+        _, _, eid = _FF_ERASE.unpack(buf)
+        self._effects.pop(eid, None)
+        if self._playing == eid:
+            self._rumble(None)
+        fcntl.ioctl(self._fd, UI_END_FF_ERASE, _FF_ERASE.pack(request_id, 0, eid))
+
+    def _play(self, code, value):
+        if code == FF_GAIN:
+            self._gain = value / 0xFFFF
+            return
+        effect = self._effects.get(code)
+        if effect is None:
+            return
+        if value > 0:
+            self._rumble(code)
+            length = effect[2]
+            if length and self._loop is not None:
+                self._stop_timer = self._loop.call_later(length / 1000, self._rumble, None)
+        elif self._playing == code:
+            self._rumble(None)
+
+    def _rumble(self, eid):
+        if self._stop_timer is not None:
+            self._stop_timer.cancel()
+            self._stop_timer = None
+        self._playing = eid
+        strong, weak = (0.0, 0.0) if eid is None else self._effects[eid][:2]
+        if self.on_rumble is not None:
+            self.on_rumble(strong * self._gain, weak * self._gain)
 
     def _events(self, state):
         # xpad reports stick Y with down positive; our state has up positive.
@@ -120,6 +227,13 @@ class UInputPad:
         if self._fd is None:
             return
         self.reset()
+        if self._stop_timer is not None:
+            self._stop_timer.cancel()
+        if self._loop is not None:
+            try:
+                self._loop.remove_reader(self._fd)
+            except (RuntimeError, ValueError):
+                pass
         try:
             fcntl.ioctl(self._fd, UI_DEV_DESTROY)
         finally:

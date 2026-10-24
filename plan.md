@@ -211,6 +211,7 @@ Do steps 3–7 on the phone so the dash shows exactly what is sent. The host onl
 - [ ] Host listens on UDP 20777, parses F1 packets (car telemetry, lap data, car status)
 - [ ] Forward a small summary to the phone ~20 Hz: gear, speed, RPM, lap time, fuel, tyres, ERS
 - [ ] Dash widget on phone; vibrate faster as RPM rises (Android)
+- [x] Game rumble → phone vibration (ViGEmBus notifications on Windows, uinput force feedback on Linux)
 - [ ] Optional: understeer/oversteer estimate per lap from steering vs yaw rate
 
 ### Phase 7: Packaging and release

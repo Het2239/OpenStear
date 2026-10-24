@@ -74,3 +74,34 @@ def test_virtual_pad_is_seen_by_xinput():
         pad.close()
         del pad
     assert wait_for(lambda: slot not in read_pads())
+
+
+class XINPUT_VIBRATION(ctypes.Structure):
+    _fields_ = [("wLeftMotorSpeed", ctypes.c_ushort), ("wRightMotorSpeed", ctypes.c_ushort)]
+
+
+async def test_game_rumble_reaches_on_rumble():
+    import asyncio
+
+    from host.gamepad import ViGEmPad
+    from host.mapper import PadState
+
+    before = read_pads()
+    pad = ViGEmPad()
+    got = []
+    pad.on_rumble = lambda strong, weak: got.append((round(strong, 1), round(weak, 1)))
+    try:
+        pad.apply(PadState(buttons=frozenset({"Y"})))
+        slot = await asyncio.to_thread(wait_for, lambda: next(
+            (i for i, v in read_pads().items() if v[0] == 0x8000 and i not in before), None))
+        assert slot is not None
+        # What a Windows game does to rumble a controller.
+        ctypes.windll.xinput1_4.XInputSetState(slot, ctypes.byref(XINPUT_VIBRATION(65535, 13107)))
+        for _ in range(60):
+            if got:
+                break
+            await asyncio.sleep(0.05)
+        assert got and got[-1] == (1.0, 0.2), got
+        ctypes.windll.xinput1_4.XInputSetState(slot, ctypes.byref(XINPUT_VIBRATION(0, 0)))
+    finally:
+        pad.close()

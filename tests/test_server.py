@@ -138,3 +138,15 @@ async def test_settings_roundtrip(aiohttp_client, tmp_path):
     assert msg["settings"]["ts"] == 5
     assert msg["settings"]["values"]["range"] == 60 and msg["settings"]["values"]["rate"] == 250
     await ws.close()
+
+
+async def test_rumble_is_forwarded_to_the_phone(client, pads):
+    ws = await hello(client)
+    pads["pad1"].on_rumble(0.8, 0.3)           # a game rumbles the pad
+    assert await ws.receive_json() == {"t": "rumble", "l": 0.8, "s": 0.3}
+    pads["pad1"].on_rumble(0.8, 0.3)           # unchanged: not resent
+    pads["pad1"].on_rumble(0.0, 0.0)
+    assert await ws.receive_json() == {"t": "rumble", "l": 0.0, "s": 0.0}
+    await ws.close()
+    await settle()
+    assert pads["pad1"].on_rumble is None      # disconnected: nobody to vibrate

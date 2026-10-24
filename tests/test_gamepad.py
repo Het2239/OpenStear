@@ -55,6 +55,9 @@ class FakeX360:
     def right_trigger(self, value):
         self.rt = value
 
+    def register_notification(self, callback_function):
+        self.notify = callback_function
+
     def update(self):
         self.updates.append((self.buttons, self.lx, self.lt, self.rt))
         self.sticks = (self.lx, self.ly, self.rx, self.ry)
@@ -111,3 +114,21 @@ def test_sticks_and_extra_buttons(fake_vgamepad):
     assert pad._pad.sticks == (1, 2, 3, -4)
     assert pad._pad.buttons == XUSB_BUTTON.XUSB_GAMEPAD_LEFT_THUMB \
         | XUSB_BUTTON.XUSB_GAMEPAD_RIGHT_THUMB | XUSB_BUTTON.XUSB_GAMEPAD_GUIDE
+
+
+async def test_rumble_from_vigem_thread_reaches_on_rumble(fake_vgamepad):
+    import asyncio
+    import inspect
+    import threading
+
+    pad = ViGEmPad()
+    names = list(inspect.signature(pad._pad.notify).parameters)
+    assert names == ["client", "target", "large_motor", "small_motor", "led_number", "user_data"]
+    got = []
+    pad.on_rumble = lambda strong, weak: got.append((strong, weak))
+    # ViGEm calls back on its own thread.
+    t = threading.Thread(target=pad._pad.notify, args=(None, None, 255, 51, 0, None))
+    t.start()
+    t.join()
+    await asyncio.sleep(0.01)
+    assert got == [(1.0, 0.2)]

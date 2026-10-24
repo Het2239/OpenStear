@@ -30,6 +30,11 @@ export const SETTINGS = {
     label: "Vibrate on press", bool: true, default: true,
     format: (v) => (v ? "on" : "off"), help: "Android only.",
   },
+  rumble: {
+    label: "Game rumble", min: 0, max: 1, step: 0.1, default: 1,
+    format: (v) => (v === 0 ? "off" : `${Math.round(v * 100)}%`),
+    help: "Vibrates when the game rumbles the controller. Android only.",
+  },
   debug: {
     label: "Show input debug", bool: true, default: false,
     format: (v) => (v ? "on" : "off"),
