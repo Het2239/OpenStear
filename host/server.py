@@ -5,11 +5,13 @@ import hmac
 import json
 import logging
 import time
+from dataclasses import replace
 from pathlib import Path
 
 from aiohttp import WSMsgType, web
 
-from .mapper import map_state
+from .latch import ButtonLatch
+from .mapper import NEUTRAL, map_state
 from .phone_settings import SettingsStore
 
 log = logging.getLogger(__name__)
@@ -69,6 +71,9 @@ class Session:
         self.last_seq = -1
         self.last_rx = 0.0
         self.live = False  # inputs applied since the last neutral reset
+        self.latch = ButtonLatch()
+        self.state = NEUTRAL
+        self._timer = None
 
     def apply(self, packet):
         seq = packet.get("seq")
@@ -76,12 +81,40 @@ class Session:
             if seq <= self.last_seq:
                 return
             self.last_seq = seq
-        self.pad.apply(map_state(packet))
+        # perf_counter: monotonic() only ticks every ~16 ms on Windows.
+        now = time.perf_counter()
+        self.state = map_state(packet)
+        self.pad.apply(replace(self.state, buttons=self.latch.update(self.state.buttons, now)))
         self.last_rx = time.monotonic()
         self.live = True
+        self._schedule()
+
+    def _schedule(self):
+        """Wake up when a press/release held back by the latch is due."""
+        due = self.latch.next_due()
+        if due is None or self._timer is not None:
+            return
+        delay = max(0.0, due - time.perf_counter())
+        self._timer = asyncio.get_running_loop().call_later(delay, self._replay)
+
+    def _replay(self):
+        self._timer = None
+        if self.live and self.pad is not None:
+            buttons = self.latch.output(time.perf_counter())
+            self.pad.apply(replace(self.state, buttons=buttons))
+            self._schedule()
+
+    def stop(self):
+        """Forget queued button edges (disconnect, failsafe)."""
+        if self._timer is not None:
+            self._timer.cancel()
+            self._timer = None
+        self.latch.reset()
+        self.state = NEUTRAL
 
     def failsafe(self):
         if self.live and time.monotonic() - self.last_rx > FAILSAFE_S:
+            self.stop()
             self.pad.reset()
             self.live = False
             log.info("%s: no input for %d ms, inputs released",
@@ -143,6 +176,7 @@ async def ws_handler(request):
                 await ws.send_json({"t": "welcome", "settings": app["settings"].get(client_id)})
     finally:
         watchdog.cancel()
+        session.stop()
         if session.client_id is not None:
             pads.release(session.client_id, session)
         log.info("Phone disconnected (%s), inputs released", session.client_id or request.remote)

@@ -1,8 +1,10 @@
 // On-screen controls built from layout JSON (web/layouts/*.json).
 //
 // Each control is placed by x, y, w, h in percent of the play area. A control
-// object has `el` and `read(out)`, which adds its current input to `out`
-// ({lx, ly, rx, ry, lt, rt, btn}). Display-only controls also have
+// object has `el` and `read(out)`, which adds its current axis values to `out`
+// ({lx, ly, rx, ry, lt, rt}). Buttons instead report every press and release
+// the moment it happens through `ctx.hold(id, mask)`, so no tap is lost
+// between packets (see buttons.js). Display-only controls also have
 // `render(info)`, called every animation frame.
 
 // Bit i of the packet's button mask is BUTTONS[i]. Must match
@@ -80,7 +82,7 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 // --- interactive controls ----------------------------------------------------
 
-function button(def) {
+function button(def, ctx, id) {
   const el = box(def, `button ${def.shape === "rect" ? "rect" : "round"}`);
   const face = document.createElement("div");
   face.className = "face";
@@ -89,11 +91,13 @@ function button(def) {
   const mask = bit(def.map);
   let down = false;
   track(el, (active) => {
-    if (active && !down) haptic();
+    if (active === down) return;
+    if (active) haptic();
     down = active;
     el.classList.toggle("pressed", down);
+    ctx.hold(id, down ? mask : 0);
   });
-  return { el, read(out) { if (down) out.btn |= mask; } };
+  return { el, read() {} };
 }
 
 // Vertical slider: finger height sets the value, release returns to 0.
@@ -153,7 +157,7 @@ function stick(def) {
 }
 
 // D-pad: one touch area so a thumb can roll between directions (8-way).
-function dpad(def) {
+function dpad(def, ctx, id) {
   const el = box(def, "dpad");
   const pad = document.createElement("div");
   pad.className = "pad";
@@ -186,11 +190,13 @@ function dpad(def) {
         for (const d of dirs) next |= masks[d];
       }
     }
+    if (next === mask) return;
     if (next & ~mask) haptic();
     mask = next;
     for (const [d, a] of Object.entries(arms)) a.classList.toggle("pressed", !!(mask & masks[d]));
+    ctx.hold(id, mask);
   });
-  return { el, read(out) { out.btn |= mask; } };
+  return { el, read() {} };
 }
 
 // --- display controls --------------------------------------------------------
@@ -255,8 +261,8 @@ function panel(def) {
 
 export const TYPES = { button, pedal, stick, dpad, status, dash, panel };
 
-export function create(def, ctx) {
+export function create(def, ctx, id) {
   const make = TYPES[def.type];
   if (!make) throw new Error(`unknown control type: ${def.type}`);
-  return make(def, ctx);
+  return make(def, ctx, id);
 }

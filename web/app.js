@@ -1,8 +1,10 @@
 import { Tilt } from "./sensors.js";
 import { AXES, create, prefs } from "./controls.js";
 import { buildSheet, defaults, loadLocal, saveLocal } from "./settings.js";
+import { ButtonLatch } from "./buttons.js";
 
 const PING_MS = 1000;
+// Above this many unsent bytes, skip packets that repeat the last one.
 const MAX_BUFFERED = 1024;
 const DEFAULT_LAYOUT = "classic";
 
@@ -42,6 +44,9 @@ let settings = loadLocal();   // {values, ts}
 let sendTimer = null;
 let lastTick = performance.now();
 let pushTimer = null;
+const latch = new ButtonLatch();
+let latchTimer = null;
+let lastSent = "";
 
 function zeroState() {
   const s = { btn: 0 };
@@ -62,8 +67,14 @@ function useLayout(id) {
   const pad = $("pad");
   pad.replaceChildren();
   pad.dataset.layout = layout.id;
-  const ctx = { layout, openMenu, openSettings, calibrate: () => tilt.calibrate() };
-  controls = layout.controls.map((def) => create(def, ctx));
+  const ctx = {
+    layout, openMenu, openSettings,
+    calibrate: () => tilt.calibrate(),
+    // A button changed: record the edge and send it now, not at the next tick.
+    hold: (id, mask) => { latch.hold(id, mask, performance.now()); tick(); },
+  };
+  latch.reset();
+  controls = layout.controls.map((def, i) => create(def, ctx, i));
   for (const c of controls) pad.append(c.el);
   // Nothing from the old layout may stay pressed.
   state = zeroState();
@@ -188,9 +199,7 @@ function connect() {
 }
 
 function send(obj) {
-  if (ws && ws.readyState === WebSocket.OPEN && ws.bufferedAmount < MAX_BUFFERED) {
-    ws.send(JSON.stringify(obj));
-  }
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
 }
 
 function startSending() {
@@ -207,12 +216,21 @@ function tick() {
   const next = zeroState();
   if (layout.tilt) next.lx = steer;
   for (const c of controls) c.read(next);
-  state = next;
-  if (connected) {
-    const packet = { t: "s", seq: ++seq, btn: state.btn };
-    for (const a of AXES) packet[a] = +state[a].toFixed(4);
-    send(packet);
+  next.btn = latch.output(now);
+  // A queued press/release is waiting for its minimum time: come back for it
+  // promptly rather than at the next regular tick.
+  if (latch.pending && !latchTimer) {
+    latchTimer = setTimeout(() => { latchTimer = null; tick(); }, 5);
   }
+  state = next;
+  if (!connected || !ws) return;
+  const body = { btn: state.btn };
+  for (const a of AXES) body[a] = +state[a].toFixed(4);
+  const key = JSON.stringify(body);
+  // On a slow link, drop repeats but never a change (e.g. a button press).
+  if (key === lastSent && ws.bufferedAmount > MAX_BUFFERED) return;
+  lastSent = key;
+  send({ t: "s", seq: ++seq, ...body });
 }
 
 // --- Render ------------------------------------------------------------------
