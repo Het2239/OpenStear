@@ -3,19 +3,128 @@
   "name": "F1 simple",
   "group": "Racing",
   "tilt": true,
-  "notes": "Big targets for racing without looking down.",
+  "notes": "Matches F1 25's default Xbox controls: gears A/X, DRS and pit limiter Y, overtake B, radio LB, camera RB, look back RS click, flashback View, pause Menu, MFD D-pad. F1 24 swaps radio (RB) and overtake (LB).",
   "controls": [
-    {"type": "button", "shape": "rect", "map": "LB", "label": "−", "sub": "GEAR", "color": "paddle", "x": 0, "y": 0, "w": 20, "h": 45},
-    {"type": "button", "shape": "rect", "map": "RB", "label": "+", "sub": "GEAR", "color": "paddle", "x": 80, "y": 0, "w": 20, "h": 45},
-    {"type": "pedal", "axis": "lt", "label": "BRAKE", "color": "red", "x": 0, "y": 48, "w": 20, "h": 52},
-    {"type": "pedal", "axis": "rt", "label": "GAS", "color": "green", "x": 80, "y": 48, "w": 20, "h": 52},
-    {"type": "status", "x": 22, "y": 1, "w": 56, "h": 11},
-    {"type": "dash", "x": 22, "y": 13, "w": 56, "h": 15},
-    {"type": "button", "shape": "rect", "map": "Y", "label": "DRS", "color": "green", "x": 22, "y": 31, "w": 18, "h": 33},
-    {"type": "button", "shape": "rect", "map": "A", "label": "OK", "color": "white", "x": 41, "y": 31, "w": 18, "h": 33},
-    {"type": "button", "shape": "rect", "map": "B", "label": "PIT", "color": "orange", "x": 60, "y": 31, "w": 18, "h": 33},
-    {"type": "button", "shape": "rect", "map": "X", "label": "RADIO", "color": "blue", "x": 22, "y": 67, "w": 18, "h": 32},
-    {"type": "dpad", "sub": "MFD", "x": 41, "y": 67, "w": 18, "h": 32},
-    {"type": "button", "shape": "rect", "map": "START", "label": "MENU", "color": "dark", "x": 60, "y": 67, "w": 18, "h": 32}
+    {
+      "type": "button",
+      "shape": "rect",
+      "map": "X",
+      "label": "−",
+      "sub": "GEAR",
+      "color": "paddle",
+      "x": 0,
+      "y": 0,
+      "w": 20,
+      "h": 45
+    },
+    {
+      "type": "button",
+      "shape": "rect",
+      "map": "A",
+      "label": "+",
+      "sub": "GEAR",
+      "color": "paddle",
+      "x": 80,
+      "y": 0,
+      "w": 20,
+      "h": 45
+    },
+    {
+      "type": "pedal",
+      "axis": "lt",
+      "label": "BRAKE",
+      "color": "red",
+      "x": 0,
+      "y": 48,
+      "w": 20,
+      "h": 52
+    },
+    {
+      "type": "pedal",
+      "axis": "rt",
+      "label": "GAS",
+      "color": "green",
+      "x": 80,
+      "y": 48,
+      "w": 20,
+      "h": 52
+    },
+    {
+      "type": "status",
+      "x": 22,
+      "y": 1,
+      "w": 56,
+      "h": 11
+    },
+    {
+      "type": "dash",
+      "x": 22,
+      "y": 13,
+      "w": 56,
+      "h": 15
+    },
+    {
+      "type": "button",
+      "shape": "rect",
+      "map": "Y",
+      "label": "DRS",
+      "color": "green",
+      "x": 22,
+      "y": 31,
+      "w": 18,
+      "h": 33
+    },
+    {
+      "type": "button",
+      "shape": "rect",
+      "map": "B",
+      "label": "OT",
+      "color": "purple",
+      "x": 41,
+      "y": 31,
+      "w": 18,
+      "h": 33
+    },
+    {
+      "type": "button",
+      "shape": "rect",
+      "map": "Y",
+      "label": "PIT",
+      "color": "orange",
+      "x": 60,
+      "y": 31,
+      "w": 18,
+      "h": 33
+    },
+    {
+      "type": "button",
+      "shape": "rect",
+      "map": "LB",
+      "label": "RADIO",
+      "color": "blue",
+      "x": 22,
+      "y": 67,
+      "w": 18,
+      "h": 32
+    },
+    {
+      "type": "dpad",
+      "sub": "MFD",
+      "x": 41,
+      "y": 67,
+      "w": 18,
+      "h": 32
+    },
+    {
+      "type": "button",
+      "shape": "rect",
+      "map": "START",
+      "label": "MENU",
+      "color": "dark",
+      "x": 60,
+      "y": 67,
+      "w": 18,
+      "h": 32
+    }
   ]
 }

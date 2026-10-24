@@ -61,10 +61,23 @@ screen). The choice is remembered.
 | Xbox style | touch | Two sticks, D-pad, A/B/X/Y, LB/RB, analog LT/RT, stick clicks, View/Home/Menu |
 | PlayStation style | touch | The same with PlayStation labels (✕ ○ □ △, L1/R1, L2/R2, Share/Options) |
 
-The PC always sees an Xbox 360 controller. F1 buttons are labels for
-convenience: DRS = Y, pit = B, radio = X, OK = A, ERS = LS click, overtake =
-RS click, camera = View, menu = Start, MFD = D-pad, gears = LB/RB. Bind those in
-the game's control settings, or adjust the layout file.
+The PC always sees an Xbox 360 controller. The F1 layouts send F1 25's default
+Xbox controls, so they work without rebinding:
+
+| On the phone | Xbox button | F1 25 action |
+|---|---|---|
+| − / + paddles | X / A | Gear down / gear up (A is also clutch) |
+| DRS, PIT | Y | DRS, pit limiter (same button in game) |
+| OT | B | Overtake |
+| RADIO | LB | Radio / voice commands |
+| CAM | RB | Change camera |
+| LOOK | RS click | Look back |
+| FLASH | View | Flashback / replay |
+| MENU | Menu | Pause |
+| MFD pad | D-pad | Multi-function display |
+
+F1 24 swaps radio (RB) and overtake (LB). If your game uses other bindings,
+change them in its control settings or edit the layout file.
 
 Layouts are JSON files in `web/layouts/` (positions in percent of the screen).
 To preview one in a desktop browser, open
