@@ -1,3 +1,4 @@
+import asyncio
 import socket
 import ssl
 
@@ -77,11 +78,25 @@ async def test_wifi_mode_serves_https_and_trust_page(host, tmp_path):
             assert r.status == 404
 
 
+async def port_open(port):
+    try:
+        _, writer = await asyncio.wait_for(asyncio.open_connection("127.0.0.1", port), 1)
+    except (OSError, asyncio.TimeoutError):
+        return False
+    writer.close()
+    return True
+
+
 async def test_back_to_usb_closes_lan_ports(host):
     await host.set_mode(core.WIFI)
+    assert await port_open(host.port + 1)
     await host.set_mode(core.USB)
-    with pytest.raises(OSError):
-        socket.create_connection(("127.0.0.1", host.port + 1), timeout=1).close()
+    # Windows may finish closing the listener a moment after stop() returns.
+    for _ in range(20):
+        if not await port_open(host.port + 1) and not await port_open(host.port + 2):
+            return
+        await asyncio.sleep(0.1)
+    pytest.fail("LAN ports still open after switching back to USB mode")
 
 
 async def test_tether_mode_without_link_explains(host):

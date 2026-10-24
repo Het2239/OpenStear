@@ -33,25 +33,27 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      # The ViGEmBus MSI bundled in vgamepad's sdist (the same one its setup.py
+      # would launch interactively). MSI installs log to a readable text file.
       - name: Install ViGEmBus driver
         shell: pwsh
+        timeout-minutes: 6
         run: |
-          $url = "https://github.com/nefarius/ViGEmBus/releases/download/v1.22.0/ViGEmBus_1.22.0_x64_x86_arm64.exe"
-          Invoke-WebRequest $url -OutFile vigem.exe
-          $hash = (Get-FileHash vigem.exe -Algorithm SHA256).Hash
-          if ($hash -ne "89220A7865076B342892F98865F3499FB7C4CFD673159E89D352C360FD014C6A") { throw "checksum mismatch: $hash" }
-          $p = Start-Process vigem.exe -ArgumentList "/install","/quiet","/norestart","/log","$PWD\vigem.log" -PassThru
+          pip download vgamepad==0.1.0 --no-deps --no-binary :all: -d dl
+          $hash = (Get-FileHash dl\vgamepad-0.1.0.tar.gz -Algorithm SHA256).Hash
+          if ($hash -ne "57F6BD01AEC0C172947517FB782D150EF9B285F7F4D524C317374FA5C24A89DE") { throw "checksum mismatch: $hash" }
+          tar -xzf dl\vgamepad-0.1.0.tar.gz -C dl
+          $msi = Resolve-Path dl\vgamepad-0.1.0\vgamepad\win\vigem\install\x64\ViGEmBusSetup_x64.msi
+          $p = Start-Process msiexec -ArgumentList "/i","`"$msi`"","/qn","/norestart","/l*v","`"$PWD\msi.log`"" -PassThru
           $done = $p.WaitForExit(240000)
-          if (-not $done) {
-            Get-Process | Where-Object { $_.MainWindowTitle } | ForEach-Object { Write-Output "::warning::window: $($_.ProcessName) - $($_.MainWindowTitle)" }
-            Get-ChildItem $env:TEMP -Filter "*ViGEm*.log" -Recurse -ErrorAction SilentlyContinue | ForEach-Object { Get-Content $_.FullName -Tail 15 | ForEach-Object { Write-Output "::warning::$_" } }
-            if (Test-Path vigem.log) { Get-Content vigem.log -Tail 25 | ForEach-Object { Write-Output "::warning::$_" } }
-            throw "installer did not finish in 4 minutes"
+          if (-not $done -or $p.ExitCode -notin 0, 3010) {
+            if (Test-Path msi.log) {
+              Get-Content msi.log | Select-String -Pattern "error|Return value 3|failed|DIFx|driver" | Select-Object -Last 20 |
+                ForEach-Object { Write-Output "::warning::$($_.Line)" }
+            }
+            throw "msiexec did not succeed (finished: $done, exit: $($p.ExitCode))"
           }
-          if ($p.ExitCode -notin 0, 3010) {
-            if (Test-Path vigem.log) { Get-Content vigem.log -Tail 25 | ForEach-Object { Write-Output "::warning::$_" } }
-            throw "installer exit code $($p.ExitCode)"
-          }
+          Get-PnpDevice -FriendlyName "*Virtual Gamepad Emulation*" -ErrorAction SilentlyContinue | Format-Table -AutoSize
       # With the driver present, vgamepad's setup skips its own interactive installer.
       - run: pip install -r requirements-dev.txt
         timeout-minutes: 5
