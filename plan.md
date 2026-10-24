@@ -119,12 +119,17 @@ Start with JSON (easy to debug), switch to binary later if needed.
 {
   "t": "s",          // type: state
   "seq": 1042,       // sequence number, host drops older packets
-  "steer": -0.31,    // -1.0 (full left) .. 1.0 (full right), already calibrated
-  "thr": 0.80,       // 0.0 .. 1.0
-  "brk": 0.0,        // 0.0 .. 1.0
-  "btn": 5           // bitmask of pressed controls (control index → bit)
+  "lx": -0.31,       // left stick X = steering, -1.0 (full left) .. 1.0, already calibrated
+  "ly": 0.0,         // left stick Y, +1 is up
+  "rx": 0.0,         // right stick, -1..1
+  "ry": 0.0,
+  "lt": 0.0,         // left trigger = brake, 0..1
+  "rt": 0.80,        // right trigger = throttle, 0..1
+  "btn": 5           // bitmask of Xbox buttons, bit order in host/mapper.py DEFAULT_BUTTONS
 }
 ```
+
+The host also accepts `steer`/`thr`/`brk` as names for `lx`/`rt`/`lt`.
 
 Other messages: `hello` (with pairing token and layout id), `ping`/`pong` (measure latency, shown in the UI), `config` (PC → phone: settings), `tele` (PC → phone: telemetry).
 
@@ -189,8 +194,9 @@ Do steps 3–7 on the phone so the dash shows exactly what is sent. The host onl
 - [ ] Wake Lock, fullscreen, PWA install (add to Home Screen)
 
 ### Phase 4: Layouts
-- [ ] Layout format as JSON: list of controls with type, position, size, mapping
-- [ ] Presets: Classic, Combo + shifter, Hybrid (full-length pedals), Arcade
+- [x] Layout format as JSON: list of controls with type, position, size, mapping
+- [x] Presets: Classic wheel, F1 wheel, F1 simple, Xbox style, PlayStation style
+- [ ] More presets: Combo + shifter, Arcade
 - [ ] Alternative steering: on-screen wheel (with configurable rotation, e.g. 900°, and auto-centre) and hold ◀ / ▶ buttons
 - [ ] Drag-and-drop editor: move, resize, add, delete controls; save as custom layout
 - [ ] Page switcher: several layouts, switch mid-game (on foot / car / plane)

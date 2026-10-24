@@ -1,0 +1,21 @@
+{
+  "id": "f1-simple",
+  "name": "F1 simple",
+  "group": "Racing",
+  "tilt": true,
+  "notes": "Big targets for racing without looking down.",
+  "controls": [
+    {"type": "button", "shape": "rect", "map": "LB", "label": "−", "sub": "GEAR", "color": "paddle", "x": 0, "y": 0, "w": 20, "h": 45},
+    {"type": "button", "shape": "rect", "map": "RB", "label": "+", "sub": "GEAR", "color": "paddle", "x": 80, "y": 0, "w": 20, "h": 45},
+    {"type": "pedal", "axis": "lt", "label": "BRAKE", "color": "red", "x": 0, "y": 48, "w": 20, "h": 52},
+    {"type": "pedal", "axis": "rt", "label": "GAS", "color": "green", "x": 80, "y": 48, "w": 20, "h": 52},
+    {"type": "status", "x": 22, "y": 1, "w": 56, "h": 11},
+    {"type": "dash", "x": 22, "y": 13, "w": 56, "h": 15},
+    {"type": "button", "shape": "rect", "map": "Y", "label": "DRS", "color": "green", "x": 22, "y": 31, "w": 18, "h": 33},
+    {"type": "button", "shape": "rect", "map": "A", "label": "OK", "color": "white", "x": 41, "y": 31, "w": 18, "h": 33},
+    {"type": "button", "shape": "rect", "map": "B", "label": "PIT", "color": "orange", "x": 60, "y": 31, "w": 18, "h": 33},
+    {"type": "button", "shape": "rect", "map": "X", "label": "RADIO", "color": "blue", "x": 22, "y": 67, "w": 18, "h": 32},
+    {"type": "dpad", "sub": "MFD", "x": 41, "y": 67, "w": 18, "h": 32},
+    {"type": "button", "shape": "rect", "map": "START", "label": "MENU", "color": "dark", "x": 60, "y": 67, "w": 18, "h": 32}
+  ]
+}

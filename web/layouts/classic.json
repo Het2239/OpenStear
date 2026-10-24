@@ -1,0 +1,16 @@
+{
+  "id": "classic",
+  "name": "Classic wheel",
+  "group": "Racing",
+  "tilt": true,
+  "controls": [
+    {"type": "pedal", "axis": "lt", "label": "BRAKE", "color": "red", "x": 0, "y": 0, "w": 26, "h": 100},
+    {"type": "pedal", "axis": "rt", "label": "GAS", "color": "green", "x": 74, "y": 0, "w": 26, "h": 100},
+    {"type": "status", "x": 28, "y": 0, "w": 44, "h": 11},
+    {"type": "dash", "x": 28, "y": 12, "w": 44, "h": 15},
+    {"type": "button", "map": "Y", "label": "Y", "x": 43, "y": 28, "w": 14, "h": 22},
+    {"type": "button", "map": "X", "label": "X", "x": 29, "y": 50, "w": 14, "h": 22},
+    {"type": "button", "map": "B", "label": "B", "x": 57, "y": 50, "w": 14, "h": 22},
+    {"type": "button", "map": "A", "label": "A", "x": 43, "y": 72, "w": 14, "h": 22}
+  ]
+}

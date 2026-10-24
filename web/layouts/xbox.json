@@ -1,0 +1,25 @@
+{
+  "id": "xbox",
+  "name": "Xbox style",
+  "group": "Controller",
+  "tilt": false,
+  "controls": [
+    {"type": "pedal", "axis": "lt", "label": "LT", "x": 0, "y": 0, "w": 9, "h": 40},
+    {"type": "button", "shape": "rect", "map": "LB", "label": "LB", "x": 10, "y": 0, "w": 16, "h": 15},
+    {"type": "pedal", "axis": "rt", "label": "RT", "x": 91, "y": 0, "w": 9, "h": 40},
+    {"type": "button", "shape": "rect", "map": "RB", "label": "RB", "x": 74, "y": 0, "w": 16, "h": 15},
+    {"type": "status", "x": 28, "y": 0, "w": 44, "h": 11},
+    {"type": "button", "map": "BACK", "label": "VIEW", "color": "dark", "x": 36, "y": 13, "w": 9, "h": 14},
+    {"type": "button", "map": "GUIDE", "label": "HOME", "color": "dark", "x": 45.5, "y": 13, "w": 9, "h": 14},
+    {"type": "button", "map": "START", "label": "MENU", "color": "dark", "x": 55, "y": 13, "w": 9, "h": 14},
+    {"type": "button", "map": "LS", "label": "LS", "color": "dark", "x": 0, "y": 44, "w": 9, "h": 20},
+    {"type": "button", "map": "RS", "label": "RS", "color": "dark", "x": 91, "y": 44, "w": 9, "h": 20},
+    {"type": "stick", "axes": ["lx", "ly"], "x": 10, "y": 20, "w": 18, "h": 50},
+    {"type": "dpad", "x": 28, "y": 58, "w": 18, "h": 40},
+    {"type": "stick", "axes": ["rx", "ry"], "x": 54, "y": 58, "w": 18, "h": 40},
+    {"type": "button", "map": "Y", "label": "Y", "color": "yellow", "x": 74, "y": 22, "w": 8, "h": 18},
+    {"type": "button", "map": "X", "label": "X", "color": "blue", "x": 66, "y": 40, "w": 8, "h": 18},
+    {"type": "button", "map": "B", "label": "B", "color": "red", "x": 82, "y": 40, "w": 8, "h": 18},
+    {"type": "button", "map": "A", "label": "A", "color": "green", "x": 74, "y": 58, "w": 8, "h": 18}
+  ]
+}

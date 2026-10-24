@@ -20,8 +20,11 @@ class XUSB_BUTTON(IntFlag):
     XUSB_GAMEPAD_DPAD_RIGHT = 0x0008
     XUSB_GAMEPAD_START = 0x0010
     XUSB_GAMEPAD_BACK = 0x0020
+    XUSB_GAMEPAD_LEFT_THUMB = 0x0040
+    XUSB_GAMEPAD_RIGHT_THUMB = 0x0080
     XUSB_GAMEPAD_LEFT_SHOULDER = 0x0100
     XUSB_GAMEPAD_RIGHT_SHOULDER = 0x0200
+    XUSB_GAMEPAD_GUIDE = 0x0400
     XUSB_GAMEPAD_A = 0x1000
     XUSB_GAMEPAD_B = 0x2000
     XUSB_GAMEPAD_X = 0x4000
@@ -31,7 +34,7 @@ class XUSB_BUTTON(IntFlag):
 class FakeX360:
     def __init__(self):
         self.buttons = 0
-        self.lx = self.ly = self.lt = self.rt = 0
+        self.lx = self.ly = self.rx = self.ry = self.lt = self.rt = 0
         self.updates = []
 
     def press_button(self, button):
@@ -43,6 +46,9 @@ class FakeX360:
     def left_joystick(self, x_value, y_value):
         self.lx, self.ly = x_value, y_value
 
+    def right_joystick(self, x_value, y_value):
+        self.rx, self.ry = x_value, y_value
+
     def left_trigger(self, value):
         self.lt = value
 
@@ -51,6 +57,7 @@ class FakeX360:
 
     def update(self):
         self.updates.append((self.buttons, self.lx, self.lt, self.rt))
+        self.sticks = (self.lx, self.ly, self.rx, self.ry)
 
 
 @pytest.fixture
@@ -96,3 +103,11 @@ def test_close_unplugs(fake_vgamepad):
     assert raw.updates[-1] == (0, 0, 0, 0)
     assert pad._pad is None
     pad.apply(PadState(rt=9))  # must not raise after close
+
+
+def test_sticks_and_extra_buttons(fake_vgamepad):
+    pad = ViGEmPad()
+    pad.apply(PadState(lx=1, ly=2, rx=3, ry=-4, buttons=frozenset({"LS", "RS", "GUIDE"})))
+    assert pad._pad.sticks == (1, 2, 3, -4)
+    assert pad._pad.buttons == XUSB_BUTTON.XUSB_GAMEPAD_LEFT_THUMB \
+        | XUSB_BUTTON.XUSB_GAMEPAD_RIGHT_THUMB | XUSB_BUTTON.XUSB_GAMEPAD_GUIDE

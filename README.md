@@ -48,6 +48,28 @@ addresses, not websites.
 Windows asks to allow Python through the firewall the first time you pick
 tethering or Wi-Fi. Allow it on private networks.
 
+## Layouts
+
+Pick a layout with the **☰** button on the phone (or "Layout" on the start
+screen). The choice is remembered.
+
+| Layout | Steering | What's on it |
+|---|---|---|
+| Classic wheel | tilt | Brake and gas pedals, A/B/X/Y |
+| F1 wheel | tilt | Gear paddles, pedals, DRS, radio, pit, ERS, overtake, MFD pad, OK, camera, menu |
+| F1 simple | tilt | Big gear paddles, pedals, DRS, OK, pit, radio, MFD pad, menu |
+| Xbox style | touch | Two sticks, D-pad, A/B/X/Y, LB/RB, analog LT/RT, stick clicks, View/Home/Menu |
+| PlayStation style | touch | The same with PlayStation labels (✕ ○ □ △, L1/R1, L2/R2, Share/Options) |
+
+The PC always sees an Xbox 360 controller. F1 buttons are labels for
+convenience: DRS = Y, pit = B, radio = X, OK = A, ERS = LS click, overtake =
+RS click, camera = View, menu = Start, MFD = D-pad, gears = LB/RB. Bind those in
+the game's control settings, or adjust the layout file.
+
+Layouts are JSON files in `web/layouts/` (positions in percent of the screen).
+To preview one in a desktop browser, open
+`http://localhost:8765/#preview&layout=f1`.
+
 Holding the phone: landscape, like a wheel. Tap **Start** (iPhone: **Enable
 motion & Start**) while holding it level; **Center** re-levels it any time.
 

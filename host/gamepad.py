@@ -43,6 +43,9 @@ class ViGEmPad(Pad):
             "DPAD_DOWN": vg.XUSB_BUTTON.XUSB_GAMEPAD_DPAD_DOWN,
             "DPAD_LEFT": vg.XUSB_BUTTON.XUSB_GAMEPAD_DPAD_LEFT,
             "DPAD_RIGHT": vg.XUSB_BUTTON.XUSB_GAMEPAD_DPAD_RIGHT,
+            "LS": vg.XUSB_BUTTON.XUSB_GAMEPAD_LEFT_THUMB,
+            "RS": vg.XUSB_BUTTON.XUSB_GAMEPAD_RIGHT_THUMB,
+            "GUIDE": vg.XUSB_BUTTON.XUSB_GAMEPAD_GUIDE,
         }
 
         self._state = NEUTRAL  # VX360Gamepad() starts with a neutral report
@@ -51,7 +54,8 @@ class ViGEmPad(Pad):
         if state == self._state or self._pad is None:
             return
         p = self._pad
-        p.left_joystick(x_value=state.lx, y_value=0)
+        p.left_joystick(x_value=state.lx, y_value=state.ly)
+        p.right_joystick(x_value=state.rx, y_value=state.ry)
         p.left_trigger(value=state.lt)
         p.right_trigger(value=state.rt)
         for name, button in self._buttons.items():
@@ -82,8 +86,8 @@ class LogPad(Pad):
         if changed and (state == NEUTRAL or now - self._last_print > 0.1):
             self._last_print = now
             log.info(
-                "%s lx=%6d lt=%3d rt=%3d btn=%s",
-                self.name, state.lx, state.lt, state.rt,
+                "%s L=(%6d,%6d) R=(%6d,%6d) lt=%3d rt=%3d btn=%s",
+                self.name, state.lx, state.ly, state.rx, state.ry, state.lt, state.rt,
                 ",".join(sorted(state.buttons)) or "-",
             )
 

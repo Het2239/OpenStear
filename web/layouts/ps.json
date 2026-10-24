@@ -1,0 +1,26 @@
+{
+  "id": "ps",
+  "name": "PlayStation style",
+  "group": "Controller",
+  "tilt": false,
+  "notes": "Shows PlayStation-style labels; the PC still sees an Xbox 360 pad (✕=A, ○=B, □=X, △=Y).",
+  "controls": [
+    {"type": "pedal", "axis": "lt", "label": "L2", "x": 0, "y": 0, "w": 9, "h": 40},
+    {"type": "button", "shape": "rect", "map": "LB", "label": "L1", "x": 10, "y": 0, "w": 16, "h": 15},
+    {"type": "pedal", "axis": "rt", "label": "R2", "x": 91, "y": 0, "w": 9, "h": 40},
+    {"type": "button", "shape": "rect", "map": "RB", "label": "R1", "x": 74, "y": 0, "w": 16, "h": 15},
+    {"type": "status", "x": 28, "y": 0, "w": 44, "h": 11},
+    {"type": "button", "shape": "rect", "map": "BACK", "label": "SHARE", "color": "dark", "x": 30, "y": 14, "w": 10, "h": 11},
+    {"type": "button", "map": "GUIDE", "label": "HOME", "color": "dark", "x": 45, "y": 13, "w": 10, "h": 15},
+    {"type": "button", "shape": "rect", "map": "START", "label": "OPTIONS", "color": "dark", "x": 60, "y": 14, "w": 10, "h": 11},
+    {"type": "button", "map": "LS", "label": "L3", "color": "dark", "x": 0, "y": 44, "w": 9, "h": 20},
+    {"type": "button", "map": "RS", "label": "R3", "color": "dark", "x": 91, "y": 44, "w": 9, "h": 20},
+    {"type": "dpad", "x": 10, "y": 20, "w": 18, "h": 44},
+    {"type": "stick", "axes": ["lx", "ly"], "x": 28, "y": 58, "w": 18, "h": 40},
+    {"type": "stick", "axes": ["rx", "ry"], "x": 54, "y": 58, "w": 18, "h": 40},
+    {"type": "button", "map": "Y", "label": "△", "color": "ps-green", "x": 74, "y": 20, "w": 8, "h": 18},
+    {"type": "button", "map": "X", "label": "□", "color": "ps-pink", "x": 66, "y": 38, "w": 8, "h": 18},
+    {"type": "button", "map": "B", "label": "○", "color": "ps-red", "x": 82, "y": 38, "w": 8, "h": 18},
+    {"type": "button", "map": "A", "label": "✕", "color": "ps-blue", "x": 74, "y": 56, "w": 8, "h": 18}
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "f1",
+  "name": "F1 wheel",
+  "group": "Racing",
+  "tilt": true,
+  "notes": "Functions are labels only: bind the same Xbox buttons in the game's controls.",
+  "controls": [
+    {"type": "button", "shape": "rect", "map": "LB", "label": "−", "sub": "GEAR", "color": "paddle", "x": 0, "y": 0, "w": 16, "h": 30},
+    {"type": "button", "shape": "rect", "map": "RB", "label": "+", "sub": "GEAR", "color": "paddle", "x": 84, "y": 0, "w": 16, "h": 30},
+    {"type": "pedal", "axis": "lt", "label": "BRAKE", "color": "red", "x": 0, "y": 33, "w": 16, "h": 67},
+    {"type": "pedal", "axis": "rt", "label": "GAS", "color": "green", "x": 84, "y": 33, "w": 16, "h": 67},
+    {"type": "panel", "style": "wheel", "x": 18, "y": 0, "w": 64, "h": 100},
+    {"type": "status", "x": 20, "y": 1, "w": 60, "h": 10},
+    {"type": "dash", "x": 31, "y": 12, "w": 38, "h": 14},
+    {"type": "button", "map": "Y", "label": "DRS", "color": "green", "x": 20, "y": 29, "w": 11, "h": 22},
+    {"type": "button", "map": "X", "label": "RADIO", "color": "blue", "x": 31, "y": 29, "w": 11, "h": 22},
+    {"type": "button", "map": "B", "label": "PIT", "color": "orange", "x": 20, "y": 53, "w": 11, "h": 22},
+    {"type": "button", "map": "LS", "label": "ERS", "color": "yellow", "x": 31, "y": 53, "w": 11, "h": 22},
+    {"type": "dpad", "sub": "MFD", "x": 42, "y": 28, "w": 16, "h": 48},
+    {"type": "button", "map": "A", "label": "OK", "color": "white", "x": 58, "y": 29, "w": 11, "h": 22},
+    {"type": "button", "map": "RS", "label": "OT", "color": "purple", "x": 69, "y": 29, "w": 11, "h": 22},
+    {"type": "button", "map": "BACK", "label": "CAM", "color": "dark", "x": 58, "y": 53, "w": 11, "h": 22},
+    {"type": "button", "map": "START", "label": "MENU", "color": "dark", "x": 69, "y": 53, "w": 11, "h": 22}
+  ]
+}
