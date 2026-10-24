@@ -162,23 +162,23 @@ Do steps 3–7 on the phone so the dash shows exactly what is sent. The host onl
 ## 7. Build phases
 
 ### Phase 1: MVP over USB (Android)
-- [ ] Host: aiohttp serves `web/`, WebSocket at `/ws`
-- [ ] Host: vgamepad virtual pad, apply state packets, 300 ms failsafe
-- [ ] Host: find `adb`, detect device, run `adb reverse tcp:PORT tcp:PORT`, re-run when phone reconnects
-- [ ] Host: print URL + show QR (console is fine at first)
-- [ ] Phone: landscape page with tilt steering, throttle and brake sliders, 4 buttons
-- [ ] Phone: send state at ~100 Hz with `requestAnimationFrame` + timer fallback
-- [ ] Phone: live readout (steer, throttle, brake, connection, ping)
+- [x] Host: aiohttp serves `web/`, WebSocket at `/ws`
+- [x] Host: vgamepad virtual pad, apply state packets, 300 ms failsafe
+- [x] Host: find `adb`, detect device, run `adb reverse tcp:PORT tcp:PORT`, re-run when phone reconnects
+- [x] Host: print URL + show QR (console is fine at first)
+- [x] Phone: landscape page with tilt steering, throttle and brake sliders, 4 buttons
+- [x] Phone: send state at ~100 Hz with `requestAnimationFrame` + timer fallback
+- [x] Phone: live readout (steer, throttle, brake, connection, ping)
 
 **Done when:** steering a car in BeamNG/Forza/Assetto Corsa works over USB, and unplugging the cable releases all inputs.
 
 ### Phase 2: Wi-Fi and tethering
-- [ ] Generate a local CA + cert for the PC's IPs; serve HTTPS
-- [ ] Guided "trust certificate" page for Android and iPhone
-- [ ] iPhone: "Tap to enable motion" button calling `requestPermission()`
-- [ ] List network interfaces; detect a tethering interface and prefer it in USB-tethering mode
-- [ ] Mode picker in host UI: USB (ADB) / USB (tethering) / Wi-Fi; QR updates per mode
-- [ ] Auto-reconnect on the phone with backoff
+- [x] Generate a local CA + cert for the PC's IPs; serve HTTPS
+- [x] Guided "trust certificate" page for Android and iPhone
+- [x] iPhone: "Tap to enable motion" button calling `requestPermission()`
+- [x] List network interfaces; detect a tethering interface and prefer it in USB-tethering mode
+- [x] Mode picker in host UI: USB (ADB) / USB (tethering) / Wi-Fi; QR updates per mode
+- [x] Auto-reconnect on the phone with backoff
 
 **Done when:** an iPhone steers over Wi-Fi and over Personal Hotspot USB.
 

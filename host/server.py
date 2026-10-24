@@ -44,6 +44,10 @@ class PadManager:
         self._owners[client_id] = owner
         return pad, previous
 
+    def connected(self):
+        """Client ids of phones with an open connection."""
+        return list(self._owners)
+
     def release(self, client_id, owner):
         if self._owners.get(client_id) is owner:
             del self._owners[client_id]
@@ -145,6 +149,11 @@ async def index(request):
     return web.FileResponse(WEB_DIR / "index.html")
 
 
+async def health(request):
+    # The trust page probes this over HTTPS to see if the phone trusts our CA.
+    return web.Response(status=204, headers={"Access-Control-Allow-Origin": "*"})
+
+
 @web.middleware
 async def no_cache(request, handler):
     resp = await handler(request)
@@ -158,10 +167,41 @@ def create_app(token, pad_factory):
     app["pads"] = PadManager(pad_factory)
     app.router.add_get("/", index)
     app.router.add_get("/ws", ws_handler)
+    app.router.add_get("/health", health)
     app.router.add_static("/", WEB_DIR)
 
     async def on_shutdown(app):
         app["pads"].close_all()
 
     app.on_shutdown.append(on_shutdown)
+    return app
+
+
+def create_trust_app(ca_path):
+    """Plain-HTTP app for the LAN: only the certificate guide and the CA file.
+
+    It never serves the controller or /ws, and the pairing token travels in
+    the URL fragment, which browsers do not send to the server.
+    """
+    app = web.Application(middlewares=[no_cache])
+
+    async def trust(request):
+        return web.FileResponse(WEB_DIR / "trust.html")
+
+    async def ca(request):
+        return web.Response(
+            body=ca_path.read_bytes(),
+            content_type="application/x-x509-ca-cert",
+            headers={"Content-Disposition": 'attachment; filename="OpenSteer-CA.crt"'},
+        )
+
+    def static(name):
+        async def handler(request):
+            return web.FileResponse(WEB_DIR / name)
+        return handler
+
+    app.router.add_get("/", trust)
+    app.router.add_get("/ca.crt", ca)
+    for name in ("trust.js", "style.css"):
+        app.router.add_get(f"/{name}", static(name))
     return app

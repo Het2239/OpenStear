@@ -1,0 +1,48 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.11", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      # vgamepad is left out here; the vigem job below covers it.
+      - run: pip install aiohttp "qrcode[pil]" cryptography psutil pytest pytest-aiohttp
+      - run: python -m pytest -v
+
+  # Installs the real ViGEmBus driver and checks that a virtual pad driven by
+  # host/gamepad.py shows up in XInput with the right values.
+  vigem:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ViGEmBus driver
+        shell: pwsh
+        run: |
+          $url = "https://github.com/nefarius/ViGEmBus/releases/download/v1.22.0/ViGEmBus_1.22.0_x64_x86_arm64.exe"
+          Invoke-WebRequest $url -OutFile vigem.exe
+          $hash = (Get-FileHash vigem.exe -Algorithm SHA256).Hash
+          if ($hash -ne "89220A7865076B342892F98865F3499FB7C4CFD673159E89D352C360FD014C6A") { throw "checksum mismatch: $hash" }
+          $p = Start-Process vigem.exe -ArgumentList "/install","/quiet","/norestart" -Wait -PassThru
+          if ($p.ExitCode -notin 0, 3010) { throw "installer exit code $($p.ExitCode)" }
+      # With the driver present, vgamepad's setup skips its own interactive installer.
+      - run: pip install -r requirements-dev.txt
+        timeout-minutes: 5
+      - run: python -m pytest -v tests/test_vigem_real.py tests/test_gamepad.py
+        env:
+          OPENSTEER_VIGEM_TEST: "1"

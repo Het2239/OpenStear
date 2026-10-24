@@ -45,7 +45,11 @@ class ViGEmPad(Pad):
             "DPAD_RIGHT": vg.XUSB_BUTTON.XUSB_GAMEPAD_DPAD_RIGHT,
         }
 
+        self._state = NEUTRAL  # VX360Gamepad() starts with a neutral report
+
     def apply(self, state):
+        if state == self._state or self._pad is None:
+            return
         p = self._pad
         p.left_joystick(x_value=state.lx, y_value=0)
         p.left_trigger(value=state.lt)
@@ -56,6 +60,7 @@ class ViGEmPad(Pad):
             else:
                 p.release_button(button=button)
         p.update()
+        self._state = state
 
     def close(self):
         self.reset()

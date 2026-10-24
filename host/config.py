@@ -6,7 +6,7 @@ import secrets
 import sys
 from pathlib import Path
 
-DEFAULTS = {"port": 8765, "token": None, "pad": "auto"}
+DEFAULTS = {"port": 8765, "token": None, "pad": "auto", "mode": "usb"}
 
 
 def config_path():
@@ -15,6 +15,10 @@ def config_path():
     else:
         base = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
     return base / "OpenSteer" / "config.json"
+
+
+def cert_dir():
+    return config_path().parent / "certs"
 
 
 def load(path=None):

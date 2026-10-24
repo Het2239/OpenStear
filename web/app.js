@@ -15,9 +15,11 @@ function save(key, value) {
   return value;
 }
 
-// The pairing token comes from the QR link; remember it so a plain reload works.
-const params = new URLSearchParams(location.search);
-const token = params.get("k") ? save("os.token", params.get("k")) : load("os.token");
+// The pairing token comes from the QR link, in the fragment (#k=) or the
+// query (?k=); remember it so a plain reload works.
+const linkToken = new URLSearchParams(location.hash.slice(1)).get("k") ||
+  new URLSearchParams(location.search).get("k");
+const token = linkToken ? save("os.token", linkToken) : load("os.token");
 const clientId = load("os.id") || save("os.id", Math.random().toString(36).slice(2, 10));
 
 const tilt = new Tilt();
@@ -132,11 +134,25 @@ async function goFullscreen() {
   } catch {
     // Not supported (e.g. iPhone Safari); the rotate hint covers it.
   }
+  await keepAwake();
+}
+
+async function keepAwake() {
   try {
     await navigator.wakeLock?.request("screen");
   } catch {
     // Wake lock is optional.
   }
+}
+
+// The browser drops the wake lock when the page is hidden; take it back.
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && $("overlay").classList.contains("hidden")) keepAwake();
+});
+
+// iPhone asks for motion permission on this tap, so say so on the button.
+if (typeof window.DeviceMotionEvent?.requestPermission === "function") {
+  $("start").textContent = "Enable motion & Start";
 }
 
 $("start").addEventListener("click", async () => {
@@ -145,7 +161,7 @@ $("start").addEventListener("click", async () => {
     return;
   }
   if (!window.isSecureContext) {
-    $("overlay-msg").textContent = "Motion sensors need https or localhost. Use USB (ADB) mode for now.";
+    $("overlay-msg").textContent = "Motion sensors need a secure page. Scan the QR code on the PC again.";
     return;
   }
   try {
