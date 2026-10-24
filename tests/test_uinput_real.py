@@ -1,9 +1,8 @@
 """End-to-end check of the Linux virtual pad: drive it, read it back from the kernel.
 
-Needs Linux with write access to /dev/uinput. Enabled with OPENSTEER_UINPUT_TEST=1.
+Needs Linux with write access to /dev/uinput. Enabled with OPENSTEAR_UINPUT_TEST=1.
 """
 
-import fcntl
 import os
 import re
 import struct
@@ -13,9 +12,11 @@ from pathlib import Path
 
 import pytest
 
+fcntl = pytest.importorskip("fcntl")   # Linux only
+
 pytestmark = pytest.mark.skipif(
-    not sys.platform.startswith("linux") or os.environ.get("OPENSTEER_UINPUT_TEST") != "1",
-    reason="needs Linux + /dev/uinput (set OPENSTEER_UINPUT_TEST=1)",
+    not sys.platform.startswith("linux") or os.environ.get("OPENSTEAR_UINPUT_TEST") != "1",
+    reason="needs Linux + /dev/uinput (set OPENSTEAR_UINPUT_TEST=1)",
 )
 
 _ABSINFO = struct.Struct("6i")
@@ -53,7 +54,7 @@ def test_virtual_pad_is_seen_by_the_kernel():
     from host.mapper import PadState
     from host.uinput_pad import ABS_HAT0X, ABS_HAT0Y, ABS_RZ, ABS_X, ABS_Y, ABS_Z, UInputPad
 
-    name = f"OpenSteer test pad {os.getpid()}"
+    name = f"OpenStear test pad {os.getpid()}"
     pad = UInputPad(name)
     try:
         node, block = find_event_node(name)
@@ -97,7 +98,7 @@ async def test_rumble_from_a_game_reaches_on_rumble():
 
     from host.uinput_pad import EV_FF, FF_RUMBLE, UInputPad, _EVENT
 
-    name = f"OpenSteer rumble test {os.getpid()}"
+    name = f"OpenStear rumble test {os.getpid()}"
     pad = UInputPad(name)
     seen = []
     pad.on_rumble = lambda strong, weak: seen.append((round(strong, 2), round(weak, 2)))
